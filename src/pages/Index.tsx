@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import Board from '@/components/Board';
-import { createInitialBoard, isValidMove, makeAIMove } from '@/lib/gameUtils';
+import { createInitialBoard, isValidMove, makeAIMove, executeMove } from '@/lib/gameUtils';
 import { Button } from '@/components/ui/button';
 
 type GameMode = 'single' | 'two-player';
@@ -20,9 +19,7 @@ const Index = () => {
         const aiMove = makeAIMove(board);
         if (aiMove) {
           const [startRow, startCol, endRow, endCol] = aiMove;
-          const newBoard = board.map(row => [...row]);
-          newBoard[endRow][endCol] = board[startRow][startCol];
-          newBoard[startRow][startCol] = 0;
+          const newBoard = executeMove(board, startRow, startCol, endRow, endCol);
           setBoard(newBoard);
           setCurrentPlayer(1);
         }
@@ -44,10 +41,7 @@ const Index = () => {
       const [startRow, startCol] = selectedPiece;
       
       if (isValidMove(board, startRow, startCol, row, col)) {
-        const newBoard = board.map(row => [...row]);
-        newBoard[row][col] = board[startRow][startCol];
-        newBoard[startRow][startCol] = 0;
-        
+        const newBoard = executeMove(board, startRow, startCol, row, col);
         setBoard(newBoard);
         setCurrentPlayer(prev => prev === 1 ? -1 : 1);
       }
