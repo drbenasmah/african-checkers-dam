@@ -46,5 +46,45 @@ export const isValidMove = (
     return board[endRow][endCol] === 0;
   }
   
-  return false; // For now, only implement basic moves
+  return false;
 };
+
+export const findAllPossibleMoves = (board: number[][], player: number): Array<[number, number, number, number]> => {
+  const moves: Array<[number, number, number, number]> = [];
+  
+  for (let row = 0; row < 10; row++) {
+    for (let col = 0; col < 10; col++) {
+      if (Math.sign(board[row][col]) === player) {
+        // Check all possible diagonal moves
+        const directions = [
+          [-1, -1], [-1, 1], // Forward moves
+          [1, -1], [1, 1]    // Backward moves (for kings)
+        ];
+        
+        directions.forEach(([dRow, dCol]) => {
+          const newRow = row + dRow;
+          const newCol = col + dCol;
+          
+          if (newRow >= 0 && newRow < 10 && newCol >= 0 && newCol < 10) {
+            if (isValidMove(board, row, col, newRow, newCol)) {
+              moves.push([row, col, newRow, newCol]);
+            }
+          }
+        });
+      }
+    }
+  }
+  
+  return moves;
+};
+
+export const makeAIMove = (board: number[][]): [number, number, number, number] | null => {
+  const possibleMoves = findAllPossibleMoves(board, -1); // AI plays as dark pieces (-1)
+  
+  if (possibleMoves.length === 0) return null;
+  
+  // For now, just choose a random move from all possible moves
+  const randomIndex = Math.floor(Math.random() * possibleMoves.length);
+  return possibleMoves[randomIndex];
+};
+
