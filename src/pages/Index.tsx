@@ -1,7 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import Board from '@/components/Board';
-import { createInitialBoard, isValidMove, makeAIMove, executeMove } from '@/lib/gameUtils';
+import { createInitialBoard, isValidMove, makeAIMove, executeMove, findCaptureSequences } from '@/lib/gameUtils';
 import { Button } from '@/components/ui/button';
+import { toast } from "sonner";
 
 type GameMode = 'single' | 'two-player';
 
@@ -11,6 +13,7 @@ const Index = () => {
   const [currentPlayer, setCurrentPlayer] = useState<1 | -1>(1);
   const [gameMode, setGameMode] = useState<GameMode | null>(null);
   const [gameStarted, setGameStarted] = useState(false);
+  const [activeSequence, setActiveSequence] = useState<[number, number][] | null>(null);
 
   useEffect(() => {
     if (gameMode === 'single' && currentPlayer === -1 && gameStarted) {
@@ -35,6 +38,12 @@ const Index = () => {
     if (selectedPiece === null) {
       const piece = board[row][col];
       if (piece !== 0 && Math.sign(piece) === currentPlayer) {
+        // When selecting a piece, check for possible capture sequences
+        const sequences = findCaptureSequences(board, row, col);
+        if (sequences.length > 0) {
+          setActiveSequence(sequences[0]);
+          toast.info("Capture sequence available! You must complete the capture.");
+        }
         setSelectedPiece([row, col]);
       }
     } else {
@@ -43,10 +52,28 @@ const Index = () => {
       if (isValidMove(board, startRow, startCol, row, col)) {
         const newBoard = executeMove(board, startRow, startCol, row, col);
         setBoard(newBoard);
-        setCurrentPlayer(prev => prev === 1 ? -1 : 1);
+
+        // If there's an active sequence and this isn't the last move
+        if (activeSequence && activeSequence.length > 2) {
+          // Remove the completed move from the sequence
+          const nextSequence = activeSequence.slice(1);
+          const nextPos = nextSequence[1];
+          
+          // Update the selected piece to the new position
+          setSelectedPiece([row, col]);
+          setActiveSequence(nextSequence);
+          toast.info("Continue the capture sequence!");
+        } else {
+          // End of sequence or regular move
+          setSelectedPiece(null);
+          setActiveSequence(null);
+          setCurrentPlayer(prev => prev === 1 ? -1 : 1);
+        }
+      } else {
+        // Invalid move
+        setSelectedPiece(null);
+        setActiveSequence(null);
       }
-      
-      setSelectedPiece(null);
     }
   };
 
@@ -54,6 +81,7 @@ const Index = () => {
     setGameMode(mode);
     setBoard(createInitialBoard());
     setSelectedPiece(null);
+    setActiveSequence(null);
     setCurrentPlayer(1);
     setGameStarted(true);
   };
@@ -62,6 +90,7 @@ const Index = () => {
     setGameMode(null);
     setBoard(createInitialBoard());
     setSelectedPiece(null);
+    setActiveSequence(null);
     setCurrentPlayer(1);
     setGameStarted(false);
   };
@@ -114,6 +143,7 @@ const Index = () => {
         board={board}
         selectedPiece={selectedPiece}
         onSquareClick={handleSquareClick}
+        activeSequence={activeSequence || undefined}
       />
     </div>
   );
