@@ -1,3 +1,4 @@
+
 export const calculateSquareColor = (row: number, col: number): string => {
   return (row + col) % 2 === 0 ? 'bg-board-light' : 'bg-board-dark';
 };
@@ -38,6 +39,29 @@ const promoteToKing = (piece: number): number => {
   return piece > 0 ? 2 : -2;
 };
 
+// Helper function to check if a diagonal path is clear
+const isDiagonalPathClear = (
+  board: number[][],
+  startRow: number,
+  startCol: number,
+  endRow: number,
+  endCol: number
+): boolean => {
+  const rowStep = Math.sign(endRow - startRow);
+  const colStep = Math.sign(endCol - startCol);
+  let currentRow = startRow + rowStep;
+  let currentCol = startCol + colStep;
+
+  while (currentRow !== endRow && currentCol !== endCol) {
+    if (board[currentRow][currentCol] !== 0) {
+      return false;
+    }
+    currentRow += rowStep;
+    currentCol += colStep;
+  }
+  return true;
+};
+
 export const canCapture = (
   board: number[][],
   row: number,
@@ -47,6 +71,36 @@ export const canCapture = (
   const piece = board[row][col];
   if (piece === 0) return false;
 
+  // For kings, check all diagonal directions for captures at any distance
+  if (isKing) {
+    const directions = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
+    
+    for (const [dRow, dCol] of directions) {
+      let currentRow = row + dRow;
+      let currentCol = col + dCol;
+      
+      while (currentRow >= 0 && currentRow < 10 && currentCol >= 0 && currentCol < 10) {
+        const currentPiece = board[currentRow][currentCol];
+        if (currentPiece !== 0) {
+          if (Math.sign(currentPiece) !== Math.sign(piece)) {
+            // Check if we can land after the captured piece
+            const jumpRow = currentRow + dRow;
+            const jumpCol = currentCol + dCol;
+            if (jumpRow >= 0 && jumpRow < 10 && jumpCol >= 0 && jumpCol < 10 && 
+                board[jumpRow][jumpCol] === 0) {
+              return true;
+            }
+          }
+          break; // Stop checking this direction if we hit any piece
+        }
+        currentRow += dRow;
+        currentCol += dCol;
+      }
+    }
+    return false;
+  }
+
+  // For regular pieces, check immediate diagonal captures
   const directions = [
     [-2, -2], [-2, 2], // Forward captures
     [2, -2], [2, 2]    // Backward captures
@@ -163,14 +217,19 @@ export const isValidMove = (
     );
   }
   
-  // If no captures are available, allow normal moves
-  const direction = piece > 0 ? 1 : -1;
-  if (Math.abs(startRow - endRow) === 1 && Math.abs(startCol - endCol) === 1) {
-    if (!isKing && (endRow - startRow) * direction < 0) return false;
-    return board[endRow][endCol] === 0;
+  // Regular movement rules
+  const isDiagonal = Math.abs(startRow - endRow) === Math.abs(startCol - endCol);
+  if (!isDiagonal || board[endRow][endCol] !== 0) return false;
+
+  if (isKing) {
+    // Kings can move any distance diagonally if path is clear
+    return isDiagonalPathClear(board, startRow, startCol, endRow, endCol);
+  } else {
+    // Regular pieces can only move one square diagonally forward
+    const direction = piece > 0 ? 1 : -1;
+    return Math.abs(startRow - endRow) === 1 && 
+           (endRow - startRow) * direction > 0;
   }
-  
-  return false;
 };
 
 export const executeMove = (
@@ -182,12 +241,31 @@ export const executeMove = (
 ): number[][] => {
   const newBoard = board.map(row => [...row]);
   const piece = board[startRow][startCol];
+  const isKing = Math.abs(piece) === 2;
   
   // If it's a capture move
-  if (Math.abs(startRow - endRow) === 2) {
-    const midRow = (startRow + endRow) / 2;
-    const midCol = (startCol + endCol) / 2;
-    newBoard[midRow][midCol] = 0; // Remove captured piece
+  if (Math.abs(startRow - endRow) > 1) {
+    if (isKing) {
+      // For kings, remove the captured piece wherever it is along the path
+      const rowStep = Math.sign(endRow - startRow);
+      const colStep = Math.sign(endCol - startCol);
+      let currentRow = startRow + rowStep;
+      let currentCol = startCol + colStep;
+      
+      while (currentRow !== endRow && currentCol !== endCol) {
+        if (newBoard[currentRow][currentCol] !== 0) {
+          newBoard[currentRow][currentCol] = 0;
+          break;
+        }
+        currentRow += rowStep;
+        currentCol += colStep;
+      }
+    } else {
+      // For regular pieces, remove the captured piece in the middle
+      const midRow = (startRow + endRow) / 2;
+      const midCol = (startCol + endCol) / 2;
+      newBoard[midRow][midCol] = 0;
+    }
   }
   
   // Move the piece
