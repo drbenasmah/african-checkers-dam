@@ -1,4 +1,3 @@
-
 export const calculateSquareColor = (row: number, col: number): string => {
   return (row + col) % 2 === 0 ? 'bg-board-light' : 'bg-board-dark';
 };
@@ -39,7 +38,6 @@ const promoteToKing = (piece: number): number => {
   return piece > 0 ? 2 : -2;
 };
 
-// Helper function to check if a diagonal path is clear
 const isDiagonalPathClear = (
   board: number[][],
   startRow: number,
@@ -53,9 +51,6 @@ const isDiagonalPathClear = (
   let currentCol = startCol + colStep;
 
   while (currentRow !== endRow || currentCol !== endCol) {
-    if (currentRow < 0 || currentRow >= 10 || currentCol < 0 || currentCol >= 10) {
-      return false;
-    }
     if (board[currentRow][currentCol] !== 0) {
       return false;
     }
@@ -244,6 +239,10 @@ export const isValidMove = (
   
   const isKing = Math.abs(piece) === 2;
   
+  // Check if the move is diagonal
+  const isDiagonal = Math.abs(startRow - endRow) === Math.abs(startCol - endCol);
+  if (!isDiagonal || board[endRow][endCol] !== 0) return false;
+
   // Check if any captures are available
   if (hasAvailableCaptures(board, Math.sign(piece))) {
     // If captures are available, only allow capture moves
@@ -255,10 +254,6 @@ export const isValidMove = (
     );
   }
   
-  // Regular movement rules
-  const isDiagonal = Math.abs(startRow - endRow) === Math.abs(startCol - endCol);
-  if (!isDiagonal || board[endRow][endCol] !== 0) return false;
-
   if (isKing) {
     // Kings can move any distance diagonally if path is clear
     return isDiagonalPathClear(board, startRow, startCol, endRow, endCol);
@@ -342,22 +337,33 @@ export const findAllPossibleMoves = (board: number[][], player: number): Array<[
   // If no captures, look for regular moves
   for (let row = 0; row < 10; row++) {
     for (let col = 0; col < 10; col++) {
-      if (Math.sign(board[row][col]) === player) {
-        const isKing = Math.abs(board[row][col]) === 2;
+      const piece = board[row][col];
+      if (Math.sign(piece) === player) {
+        const isKing = Math.abs(piece) === 2;
         
         if (isKing) {
           // Check all diagonal directions
           const directions = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
           for (const [dRow, dCol] of directions) {
-            let currentRow = row + dRow;
-            let currentCol = col + dCol;
-            while (currentRow >= 0 && currentRow < 10 && currentCol >= 0 && currentCol < 10) {
+            let currentRow = row;
+            let currentCol = col;
+            
+            // Try each distance in this direction
+            while (true) {
+              currentRow += dRow;
+              currentCol += dCol;
+              
+              if (currentRow < 0 || currentRow >= 10 || currentCol < 0 || currentCol >= 10) {
+                break;
+              }
+              
+              if (board[currentRow][currentCol] !== 0) {
+                break;
+              }
+              
               if (isValidMove(board, row, col, currentRow, currentCol)) {
                 moves.push([row, col, currentRow, currentCol]);
               }
-              if (board[currentRow][currentCol] !== 0) break;
-              currentRow += dRow;
-              currentCol += dCol;
             }
           }
         } else {
