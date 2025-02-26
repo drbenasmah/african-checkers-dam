@@ -1,4 +1,3 @@
-
 export const calculateSquareColor = (row: number, col: number): string => {
   return (row + col) % 2 === 0 ? 'bg-board-light' : 'bg-board-dark';
 };
@@ -27,7 +26,18 @@ export const createInitialBoard = (): number[][] => {
   return board;
 };
 
-// Check if a capture is possible from a specific position
+const shouldPromoteToKing = (board: number[][], row: number, col: number): boolean => {
+  const piece = board[row][col];
+  if (Math.abs(piece) === 2) return false; // Already a king
+  
+  // Light pieces promote at row 9, dark pieces at row 0
+  return (piece === 1 && row === 9) || (piece === -1 && row === 0);
+};
+
+const promoteToKing = (piece: number): number => {
+  return piece > 0 ? 2 : -2;
+};
+
 export const canCapture = (
   board: number[][],
   row: number,
@@ -59,7 +69,6 @@ export const canCapture = (
   return false;
 };
 
-// Find all possible capture sequences from a position
 export const findCaptureSequences = (
   board: number[][],
   row: number,
@@ -116,7 +125,6 @@ export const findCaptureSequences = (
   return allSequences;
 };
 
-// Check if any piece can make a capture
 export const hasAvailableCaptures = (board: number[][], currentPlayer: number): boolean => {
   for (let row = 0; row < 10; row++) {
     for (let col = 0; col < 10; col++) {
@@ -183,8 +191,15 @@ export const executeMove = (
   }
   
   // Move the piece
-  newBoard[endRow][endCol] = piece;
   newBoard[startRow][startCol] = 0;
+  
+  // Check for promotion only if no more captures are available
+  if (shouldPromoteToKing(board, endRow, endCol) && 
+      !canCapture(newBoard, endRow, endCol, false)) {
+    newBoard[endRow][endCol] = promoteToKing(piece);
+  } else {
+    newBoard[endRow][endCol] = piece;
+  }
   
   return newBoard;
 };
