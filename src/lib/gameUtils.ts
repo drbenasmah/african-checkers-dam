@@ -1,3 +1,4 @@
+
 export const calculateSquareColor = (row: number, col: number): string => {
   return (row + col) % 2 === 0 ? 'bg-board-light' : 'bg-board-dark';
 };
@@ -176,7 +177,7 @@ export const findCaptureSequences = (
       }
     }
   } else {
-    // Regular piece capture logic - keep existing code
+    // Regular piece capture logic
     const directions = [[-2, -2], [-2, 2], [2, -2], [2, 2]];
     
     for (const [dRow, dCol] of directions) {
@@ -308,9 +309,8 @@ export const executeMove = (
   // Move the piece
   newBoard[startRow][startCol] = 0;
   
-  // Check for promotion only if no more captures are available
-  if (shouldPromoteToKing(board, endRow, endCol) && 
-      !canCapture(newBoard, endRow, endCol, false)) {
+  // Check for promotion
+  if (shouldPromoteToKing(board, endRow, endCol)) {
     newBoard[endRow][endCol] = promoteToKing(piece);
   } else {
     newBoard[endRow][endCol] = piece;
@@ -344,21 +344,41 @@ export const findAllPossibleMoves = (board: number[][], player: number): Array<[
     for (let col = 0; col < 10; col++) {
       if (Math.sign(board[row][col]) === player) {
         const isKing = Math.abs(board[row][col]) === 2;
-        const directions = [
-          [-1, -1], [-1, 1], // Forward moves
-          [1, -1], [1, 1]    // Backward moves (for kings)
-        ];
         
-        directions.forEach(([dRow, dCol]) => {
-          const newRow = row + dRow;
-          const newCol = col + dCol;
-          
-          if (newRow >= 0 && newRow < 10 && newCol >= 0 && newCol < 10) {
-            if (isValidMove(board, row, col, newRow, newCol)) {
-              moves.push([row, col, newRow, newCol]);
+        if (isKing) {
+          // Check all diagonal directions
+          const directions = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
+          for (const [dRow, dCol] of directions) {
+            let currentRow = row + dRow;
+            let currentCol = col + dCol;
+            while (currentRow >= 0 && currentRow < 10 && currentCol >= 0 && currentCol < 10) {
+              if (isValidMove(board, row, col, currentRow, currentCol)) {
+                moves.push([row, col, currentRow, currentCol]);
+              }
+              if (board[currentRow][currentCol] !== 0) break;
+              currentRow += dRow;
+              currentCol += dCol;
             }
           }
-        });
+        } else {
+          // Regular piece moves
+          const direction = player > 0 ? 1 : -1;
+          const possibleMoves = [
+            [direction, -1],
+            [direction, 1]
+          ];
+          
+          for (const [dRow, dCol] of possibleMoves) {
+            const newRow = row + dRow;
+            const newCol = col + dCol;
+            
+            if (newRow >= 0 && newRow < 10 && newCol >= 0 && newCol < 10) {
+              if (isValidMove(board, row, col, newRow, newCol)) {
+                moves.push([row, col, newRow, newCol]);
+              }
+            }
+          }
+        }
       }
     }
   }
@@ -373,7 +393,7 @@ export const makeAIMove = (board: number[][]): [number, number, number, number] 
   
   // Prioritize capture moves
   const captureMoves = possibleMoves.filter(([startRow, startCol, endRow, endCol]) => 
-    Math.abs(startRow - endRow) === 2
+    Math.abs(startRow - endRow) > 1
   );
   
   if (captureMoves.length > 0) {
