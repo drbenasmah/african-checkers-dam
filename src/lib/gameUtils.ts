@@ -1,4 +1,3 @@
-
 export const calculateSquareColor = (row: number, col: number): string => {
   return (row + col) % 2 === 0 ? 'bg-board-light' : 'bg-board-dark';
 };
@@ -52,7 +51,10 @@ const isDiagonalPathClear = (
   let currentRow = startRow + rowStep;
   let currentCol = startCol + colStep;
 
-  while (currentRow !== endRow && currentCol !== endCol) {
+  while (currentRow !== endRow || currentCol !== endCol) {
+    if (currentRow < 0 || currentRow >= 10 || currentCol < 0 || currentCol >= 10) {
+      return false;
+    }
     if (board[currentRow][currentCol] !== 0) {
       return false;
     }
@@ -78,21 +80,21 @@ export const canCapture = (
     for (const [dRow, dCol] of directions) {
       let currentRow = row + dRow;
       let currentCol = col + dCol;
+      let foundEnemy = false;
       
       while (currentRow >= 0 && currentRow < 10 && currentCol >= 0 && currentCol < 10) {
         const currentPiece = board[currentRow][currentCol];
+        
         if (currentPiece !== 0) {
-          if (Math.sign(currentPiece) !== Math.sign(piece)) {
-            // Check if we can land after the captured piece
-            const jumpRow = currentRow + dRow;
-            const jumpCol = currentCol + dCol;
-            if (jumpRow >= 0 && jumpRow < 10 && jumpCol >= 0 && jumpCol < 10 && 
-                board[jumpRow][jumpCol] === 0) {
-              return true;
-            }
+          if (!foundEnemy && Math.sign(currentPiece) !== Math.sign(piece)) {
+            foundEnemy = true;
+          } else {
+            break; // Either found second piece or found friendly piece
           }
-          break; // Stop checking this direction if we hit any piece
+        } else if (foundEnemy) {
+          return true; // Found empty space after enemy piece
         }
+        
         currentRow += dRow;
         currentCol += dCol;
       }
@@ -132,42 +134,77 @@ export const findCaptureSequences = (
 ): [number, number][][] => {
   const piece = board[row][col];
   const isKing = Math.abs(piece) === 2;
-  
-  const directions = [
-    [-2, -2], [-2, 2], // Forward captures
-    [2, -2], [2, 2]    // Backward captures
-  ];
-
   let foundCapture = false;
   
-  for (const [dRow, dCol] of directions) {
-    const newRow = row + dRow;
-    const newCol = col + dCol;
-    const midRow = row + dRow/2;
-    const midCol = col + dCol/2;
+  if (isKing) {
+    const directions = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
+    
+    for (const [dRow, dCol] of directions) {
+      let currentRow = row + dRow;
+      let currentCol = col + dCol;
+      let foundEnemy = false;
+      let enemyRow = -1;
+      let enemyCol = -1;
+      
+      while (currentRow >= 0 && currentRow < 10 && currentCol >= 0 && currentCol < 10) {
+        if (board[currentRow][currentCol] !== 0) {
+          if (!foundEnemy && Math.sign(board[currentRow][currentCol]) !== Math.sign(piece)) {
+            foundEnemy = true;
+            enemyRow = currentRow;
+            enemyCol = currentCol;
+          } else {
+            break;
+          }
+        } else if (foundEnemy) {
+          // Create a new board state for recursive checking
+          const newBoard = board.map(row => [...row]);
+          newBoard[enemyRow][enemyCol] = 0; // Remove captured piece
+          newBoard[row][col] = 0;           // Remove moving piece
+          newBoard[currentRow][currentCol] = piece; // Place piece in new position
+          
+          foundCapture = true;
+          findCaptureSequences(
+            newBoard,
+            currentRow,
+            currentCol,
+            [...sequence, [currentRow, currentCol]],
+            allSequences
+          );
+        }
+        currentRow += dRow;
+        currentCol += dCol;
+      }
+    }
+  } else {
+    // Regular piece capture logic - keep existing code
+    const directions = [[-2, -2], [-2, 2], [2, -2], [2, 2]];
+    
+    for (const [dRow, dCol] of directions) {
+      const newRow = row + dRow;
+      const newCol = col + dCol;
+      const midRow = row + dRow/2;
+      const midCol = col + dCol/2;
 
-    if (newRow >= 0 && newRow < 10 && newCol >= 0 && newCol < 10) {
-      const targetPiece = board[midRow][midCol];
-      if (targetPiece !== 0 && 
-          Math.sign(targetPiece) !== Math.sign(piece) && 
-          board[newRow][newCol] === 0) {
-        
-        // Create a new board state for recursive checking
-        const newBoard = board.map(row => [...row]);
-        newBoard[midRow][midCol] = 0; // Remove captured piece
-        newBoard[row][col] = 0;       // Remove moving piece from original position
-        newBoard[newRow][newCol] = piece; // Place piece in new position
-        
-        foundCapture = true;
-        
-        // Recursively find more captures
-        findCaptureSequences(
-          newBoard,
-          newRow,
-          newCol,
-          [...sequence, [newRow, newCol]],
-          allSequences
-        );
+      if (newRow >= 0 && newRow < 10 && newCol >= 0 && newCol < 10) {
+        const targetPiece = board[midRow][midCol];
+        if (targetPiece !== 0 && 
+            Math.sign(targetPiece) !== Math.sign(piece) && 
+            board[newRow][newCol] === 0) {
+          
+          const newBoard = board.map(row => [...row]);
+          newBoard[midRow][midCol] = 0;
+          newBoard[row][col] = 0;
+          newBoard[newRow][newCol] = piece;
+          
+          foundCapture = true;
+          findCaptureSequences(
+            newBoard,
+            newRow,
+            newCol,
+            [...sequence, [newRow, newCol]],
+            allSequences
+          );
+        }
       }
     }
   }
@@ -246,13 +283,13 @@ export const executeMove = (
   // If it's a capture move
   if (Math.abs(startRow - endRow) > 1) {
     if (isKing) {
-      // For kings, remove the captured piece wherever it is along the path
+      // For kings, find and remove the captured piece
       const rowStep = Math.sign(endRow - startRow);
       const colStep = Math.sign(endCol - startCol);
       let currentRow = startRow + rowStep;
       let currentCol = startCol + colStep;
       
-      while (currentRow !== endRow && currentCol !== endCol) {
+      while (currentRow !== endRow || currentCol !== endCol) {
         if (newBoard[currentRow][currentCol] !== 0) {
           newBoard[currentRow][currentCol] = 0;
           break;
