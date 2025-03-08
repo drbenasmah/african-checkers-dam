@@ -1,3 +1,4 @@
+
 export const calculateSquareColor = (row: number, col: number): string => {
   return (row + col) % 2 === 0 ? 'bg-board-light' : 'bg-board-dark';
 };
@@ -378,8 +379,10 @@ export const findAllPossibleMoves = (board: number[][], player: number): Array<[
                 break;
               }
               
-              // Add valid move
-              moves.push([row, col, newRow, newCol]);
+              // Only add moves that are valid according to isValidMove
+              if (isDiagonalPathClear(board, row, col, newRow, newCol)) {
+                moves.push([row, col, newRow, newCol]);
+              }
               
               distance++;
             }
