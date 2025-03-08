@@ -1,3 +1,4 @@
+
 export const calculateSquareColor = (row: number, col: number): string => {
   return (row + col) % 2 === 0 ? 'bg-board-light' : 'bg-board-dark';
 };
@@ -45,12 +46,22 @@ const isDiagonalPathClear = (
   endRow: number,
   endCol: number
 ): boolean => {
+  // Make sure we're checking a diagonal
+  if (Math.abs(startRow - endRow) !== Math.abs(startCol - endCol)) {
+    return false;
+  }
+  
   const rowStep = Math.sign(endRow - startRow);
   const colStep = Math.sign(endCol - startCol);
   let currentRow = startRow + rowStep;
   let currentCol = startCol + colStep;
 
   while (currentRow !== endRow || currentCol !== endCol) {
+    // Check if still on board
+    if (currentRow < 0 || currentRow >= 10 || currentCol < 0 || currentCol >= 10) {
+      return false;
+    }
+    // Check if path is clear
     if (board[currentRow][currentCol] !== 0) {
       return false;
     }
@@ -239,9 +250,14 @@ export const isValidMove = (
   
   const isKing = Math.abs(piece) === 2;
   
+  // Check if target square is empty and on the board
+  if (endRow < 0 || endRow >= 10 || endCol < 0 || endCol >= 10 || board[endRow][endCol] !== 0) {
+    return false;
+  }
+  
   // Check if the move is diagonal
   const isDiagonal = Math.abs(startRow - endRow) === Math.abs(startCol - endCol);
-  if (!isDiagonal || board[endRow][endCol] !== 0) return false;
+  if (!isDiagonal) return false;
 
   // Check if any captures are available
   if (hasAvailableCaptures(board, Math.sign(piece))) {
@@ -260,7 +276,7 @@ export const isValidMove = (
   } else {
     // Regular pieces can only move one square diagonally forward
     const direction = piece > 0 ? 1 : -1;
-    return Math.abs(startRow - endRow) === 1 && 
+    return Math.abs(startCol - endCol) === 1 && 
            (endRow - startRow) * direction > 0;
   }
 };
@@ -342,32 +358,37 @@ export const findAllPossibleMoves = (board: number[][], player: number): Array<[
         const isKing = Math.abs(piece) === 2;
         
         if (isKing) {
-          // Check all diagonal directions
+          // Check all diagonal directions for kings
           const directions = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
+          
           for (const [dRow, dCol] of directions) {
-            let currentRow = row;
-            let currentCol = col;
+            let distance = 1;
             
             // Try each distance in this direction
             while (true) {
-              currentRow += dRow;
-              currentCol += dCol;
+              const newRow = row + dRow * distance;
+              const newCol = col + dCol * distance;
               
-              if (currentRow < 0 || currentRow >= 10 || currentCol < 0 || currentCol >= 10) {
+              // Check if we're still on the board
+              if (newRow < 0 || newRow >= 10 || newCol < 0 || newCol >= 10) {
                 break;
               }
               
-              if (board[currentRow][currentCol] !== 0) {
+              // Check if the square is empty
+              if (board[newRow][newCol] !== 0) {
                 break;
               }
               
-              if (isValidMove(board, row, col, currentRow, currentCol)) {
-                moves.push([row, col, currentRow, currentCol]);
+              // Add valid move
+              if (isValidMove(board, row, col, newRow, newCol)) {
+                moves.push([row, col, newRow, newCol]);
               }
+              
+              distance++;
             }
           }
         } else {
-          // Regular piece moves
+          // Regular piece moves - one square diagonally forward
           const direction = player > 0 ? 1 : -1;
           const possibleMoves = [
             [direction, -1],
