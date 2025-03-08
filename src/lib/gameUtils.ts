@@ -270,7 +270,7 @@ export const isValidMove = (
   }
   
   if (isKing) {
-    // Kings can move any distance diagonally if path is clear
+    // Kings can move any distance diagonally in any direction if path is clear
     return isDiagonalPathClear(board, startRow, startCol, endRow, endCol);
   } else {
     // Regular pieces can only move one square diagonally forward
@@ -357,7 +357,7 @@ export const findAllPossibleMoves = (board: number[][], player: number): Array<[
         const isKing = Math.abs(piece) === 2;
         
         if (isKing) {
-          // Check all diagonal directions for kings
+          // Check all diagonal directions for kings (including backwards)
           const directions = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
           
           for (const [dRow, dCol] of directions) {
@@ -379,9 +379,7 @@ export const findAllPossibleMoves = (board: number[][], player: number): Array<[
               }
               
               // Add valid move
-              if (isValidMove(board, row, col, newRow, newCol)) {
-                moves.push([row, col, newRow, newCol]);
-              }
+              moves.push([row, col, newRow, newCol]);
               
               distance++;
             }
