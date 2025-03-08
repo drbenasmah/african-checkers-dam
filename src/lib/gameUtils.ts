@@ -1,4 +1,3 @@
-
 export const calculateSquareColor = (row: number, col: number): string => {
   return (row + col) % 2 === 0 ? 'bg-board-light' : 'bg-board-dark';
 };
