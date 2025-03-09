@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Board from '@/components/Board';
 import { createInitialBoard, isValidMove, makeAIMove, executeMove, findCaptureSequences } from '@/lib/gameUtils';
@@ -14,10 +13,10 @@ const Index = () => {
   const [gameMode, setGameMode] = useState<GameMode | null>(null);
   const [gameStarted, setGameStarted] = useState(false);
   const [activeSequence, setActiveSequence] = useState<[number, number][] | null>(null);
+  const [captureInProgress, setCaptureInProgress] = useState(false);
 
   useEffect(() => {
     if (gameMode === 'single' && currentPlayer === -1 && gameStarted) {
-      // Add a small delay to make AI moves feel more natural
       const timeoutId = setTimeout(() => {
         const aiMove = makeAIMove(board);
         if (aiMove) {
@@ -34,7 +33,6 @@ const Index = () => {
   }, [currentPlayer, board, gameMode, gameStarted]);
 
   const checkForKingPromotion = (board: number[][]) => {
-    // Check if any promotion happened
     for (let col = 0; col < 10; col++) {
       if (board[9][col] === 1) {
         toast.success("Piece promoted to King!");
@@ -53,11 +51,15 @@ const Index = () => {
     if (selectedPiece === null) {
       const piece = board[row][col];
       if (piece !== 0 && Math.sign(piece) === currentPlayer) {
-        // When selecting a piece, check for possible capture sequences
         const sequences = findCaptureSequences(board, row, col);
         if (sequences.length > 0) {
           setActiveSequence(sequences[0]);
-          toast.info("Capture sequence available! You must complete the capture.");
+          if (Math.abs(piece) === 2 && sequences[0].length > 2) {
+            toast.info("Multiple capture sequence available for king! You must complete all captures.");
+            setCaptureInProgress(true);
+          } else if (sequences[0].length > 2) {
+            toast.info("Capture sequence available! You must complete the capture.");
+          }
         }
         setSelectedPiece([row, col]);
       }
@@ -69,26 +71,35 @@ const Index = () => {
         setBoard(newBoard);
         checkForKingPromotion(newBoard);
 
-        // If there's an active sequence and this isn't the last move
+        const isPieceKing = Math.abs(board[startRow][startCol]) === 2;
+
         if (activeSequence && activeSequence.length > 2) {
-          // Remove the completed move from the sequence
           const nextSequence = activeSequence.slice(1);
-          const nextPos = nextSequence[1];
-          
-          // Update the selected piece to the new position
           setSelectedPiece([row, col]);
           setActiveSequence(nextSequence);
-          toast.info("Continue the capture sequence!");
+          if (isPieceKing && nextSequence.length > 1) {
+            toast.info("Continue the king's capture sequence!");
+          } else if (nextSequence.length > 1) {
+            toast.info("Continue the capture sequence!");
+          } else {
+            setSelectedPiece(null);
+            setActiveSequence(null);
+            setCaptureInProgress(false);
+            setCurrentPlayer(prev => prev === 1 ? -1 : 1);
+          }
         } else {
-          // End of sequence or regular move
           setSelectedPiece(null);
           setActiveSequence(null);
+          setCaptureInProgress(false);
           setCurrentPlayer(prev => prev === 1 ? -1 : 1);
         }
       } else {
-        // Invalid move
+        if (captureInProgress) {
+          toast.error("You must complete the capture sequence!");
+        }
         setSelectedPiece(null);
         setActiveSequence(null);
+        setCaptureInProgress(false);
       }
     }
   };

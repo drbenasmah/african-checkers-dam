@@ -1,3 +1,4 @@
+
 export const calculateSquareColor = (row: number, col: number): string => {
   return (row + col) % 2 === 0 ? 'bg-board-light' : 'bg-board-dark';
 };
@@ -93,11 +94,14 @@ export const canCapture = (
         if (currentPiece !== 0) {
           if (!foundEnemy && Math.sign(currentPiece) !== Math.sign(piece)) {
             foundEnemy = true;
-          } else {
+          } else if (foundEnemy) {
             break; // Either found second piece or found friendly piece
+          } else {
+            break; // Found friendly piece first
           }
         } else if (foundEnemy) {
-          return true; // Found empty space after enemy piece
+          // Found empty space after enemy piece
+          return true;
         }
         
         currentRow += dRow;
@@ -152,13 +156,15 @@ export const findCaptureSequences = (
       let enemyCol = -1;
       
       while (currentRow >= 0 && currentRow < 10 && currentCol >= 0 && currentCol < 10) {
-        if (board[currentRow][currentCol] !== 0) {
-          if (!foundEnemy && Math.sign(board[currentRow][currentCol]) !== Math.sign(piece)) {
+        const currentPiece = board[currentRow][currentCol];
+        
+        if (currentPiece !== 0) {
+          if (!foundEnemy && Math.sign(currentPiece) !== Math.sign(piece)) {
             foundEnemy = true;
             enemyRow = currentRow;
             enemyCol = currentCol;
           } else {
-            break;
+            break; // Either found second piece or found friendly piece
           }
         } else if (foundEnemy) {
           // Create a new board state for recursive checking
@@ -168,14 +174,24 @@ export const findCaptureSequences = (
           newBoard[currentRow][currentCol] = piece; // Place piece in new position
           
           foundCapture = true;
-          findCaptureSequences(
+          // Add this landing position to the sequence
+          const newSequence = [...sequence, [currentRow, currentCol]];
+          
+          // Check for further captures from this position
+          const furtherCaptures = findCaptureSequences(
             newBoard,
             currentRow,
             currentCol,
-            [...sequence, [currentRow, currentCol]],
+            newSequence,
             allSequences
           );
+          
+          // If no further captures possible from this position, add the sequence
+          if (furtherCaptures.length === 0 && newSequence.length > 1) {
+            allSequences.push(newSequence);
+          }
         }
+        
         currentRow += dRow;
         currentCol += dCol;
       }
