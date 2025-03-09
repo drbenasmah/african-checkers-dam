@@ -1,4 +1,3 @@
-
 export const calculateSquareColor = (row: number, col: number): string => {
   return (row + col) % 2 === 0 ? 'bg-board-light' : 'bg-board-dark';
 };
@@ -88,7 +87,7 @@ export const canCapture = (
       let currentCol = col + dCol;
       let foundEnemy = false;
       
-      while (currentRow >= 0 && currentRow < 10 && currentCol >= 0 && currentCol < 10) {
+      while (currentRow >= 0 && currentCol >= 0 && currentRow < 10 && currentCol < 10) {
         const currentPiece = board[currentRow][currentCol];
         
         if (currentPiece !== 0) {
@@ -167,6 +166,8 @@ export const findCaptureSequences = (
             break; // Either found second piece or found friendly piece
           }
         } else if (foundEnemy) {
+          // Found empty space after enemy piece
+          
           // Create a new board state for recursive checking
           const newBoard = board.map(row => [...row]);
           newBoard[enemyRow][enemyCol] = 0; // Remove captured piece
@@ -174,6 +175,7 @@ export const findCaptureSequences = (
           newBoard[currentRow][currentCol] = piece; // Place piece in new position
           
           foundCapture = true;
+          
           // Add this landing position to the sequence
           const newSequence = [...sequence, [currentRow, currentCol] as [number, number]];
           
@@ -183,11 +185,18 @@ export const findCaptureSequences = (
             currentRow,
             currentCol,
             newSequence,
-            allSequences
+            []  // Use an empty array to collect only sequences from this position
           );
           
-          // If no further captures possible from this position, add the sequence
-          if (furtherCaptures.length === 0 && newSequence.length > 1) {
+          // If further captures are possible, add those sequences
+          if (furtherCaptures.length > 0) {
+            furtherCaptures.forEach(seq => {
+              if (seq.length > newSequence.length) {
+                allSequences.push(seq);
+              }
+            });
+          } else if (newSequence.length > 1) {
+            // If no further captures possible, add the current sequence
             allSequences.push(newSequence);
           }
           

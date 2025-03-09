@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Board from '@/components/Board';
 import { createInitialBoard, isValidMove, makeAIMove, executeMove, findCaptureSequences } from '@/lib/gameUtils';
@@ -74,17 +75,22 @@ const Index = () => {
         const isPieceKing = Math.abs(board[startRow][startCol]) === 2;
 
         if (activeSequence && activeSequence.length > 2) {
-          const nextSequence = activeSequence.slice(1);
-          setSelectedPiece([row, col]);
-          setActiveSequence(nextSequence);
+          // Find the next position in the sequence
+          const nextSequencePos = activeSequence.findIndex(
+            pos => pos[0] === row && pos[1] === col
+          );
           
-          if (nextSequence.length > 1) {
-            if (isPieceKing) {
-              toast.info("Continue the king's capture sequence!");
-            } else {
-              toast.info("Continue the capture sequence!");
-            }
+          if (nextSequencePos > 0 && nextSequencePos < activeSequence.length - 1) {
+            // There are more captures to be made
+            const remainingSequence = activeSequence.slice(nextSequencePos);
+            setSelectedPiece([row, col]);
+            setActiveSequence(remainingSequence);
+            
+            toast.info(isPieceKing 
+              ? "Continue the king's capture sequence!" 
+              : "Continue the capture sequence!");
           } else {
+            // End of sequence or not following the sequence
             setSelectedPiece(null);
             setActiveSequence(null);
             setCaptureInProgress(false);
