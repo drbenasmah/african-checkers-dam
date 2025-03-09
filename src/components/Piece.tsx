@@ -20,8 +20,9 @@ const Piece: React.FC<PieceProps> = ({ type, isSelected }) => {
         hover:scale-105 cursor-pointer shadow-lg flex items-center justify-center`}
     >
       {isKing && (
-        <Crown
+        <Crown 
           className={`w-1/2 h-1/2 ${isLight ? 'text-piece-dark' : 'text-piece-light'} drop-shadow-md`}
+          strokeWidth={2.5}
         />
       )}
     </div>
