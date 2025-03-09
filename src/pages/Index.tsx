@@ -24,6 +24,7 @@ const Index = () => {
           const [startRow, startCol, endRow, endCol] = aiMove;
           const newBoard = executeMove(board, startRow, startCol, endRow, endCol);
           setBoard(newBoard);
+          checkForKingPromotion(newBoard);
           setCurrentPlayer(1);
         }
       }, 500);
@@ -31,6 +32,20 @@ const Index = () => {
       return () => clearTimeout(timeoutId);
     }
   }, [currentPlayer, board, gameMode, gameStarted]);
+
+  const checkForKingPromotion = (board: number[][]) => {
+    // Check if any promotion happened
+    for (let col = 0; col < 10; col++) {
+      if (board[9][col] === 1) {
+        toast.success("Piece promoted to King!");
+        break;
+      }
+      if (board[0][col] === -1) {
+        toast.success("Piece promoted to King!");
+        break;
+      }
+    }
+  };
 
   const handleSquareClick = (row: number, col: number) => {
     if (!gameStarted || (gameMode === 'single' && currentPlayer === -1)) return;
@@ -52,6 +67,7 @@ const Index = () => {
       if (isValidMove(board, startRow, startCol, row, col)) {
         const newBoard = executeMove(board, startRow, startCol, row, col);
         setBoard(newBoard);
+        checkForKingPromotion(newBoard);
 
         // If there's an active sequence and this isn't the last move
         if (activeSequence && activeSequence.length > 2) {

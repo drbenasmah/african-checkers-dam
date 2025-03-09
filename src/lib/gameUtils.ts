@@ -1,4 +1,3 @@
-
 export const calculateSquareColor = (row: number, col: number): string => {
   return (row + col) % 2 === 0 ? 'bg-board-light' : 'bg-board-dark';
 };
@@ -27,8 +26,7 @@ export const createInitialBoard = (): number[][] => {
   return board;
 };
 
-const shouldPromoteToKing = (board: number[][], row: number, col: number): boolean => {
-  const piece = board[row][col];
+const shouldPromoteToKing = (board: number[][], row: number, col: number, piece: number): boolean => {
   if (Math.abs(piece) === 2) return false; // Already a king
   
   // Light pieces promote at row 9, dark pieces at row 0
@@ -321,7 +319,7 @@ export const executeMove = (
   newBoard[startRow][startCol] = 0;
   
   // Check for promotion
-  if (shouldPromoteToKing(board, endRow, endCol)) {
+  if (shouldPromoteToKing(board, endRow, endCol, piece)) {
     newBoard[endRow][endCol] = promoteToKing(piece);
   } else {
     newBoard[endRow][endCol] = piece;
