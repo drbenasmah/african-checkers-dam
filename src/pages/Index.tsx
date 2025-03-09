@@ -77,10 +77,13 @@ const Index = () => {
           const nextSequence = activeSequence.slice(1);
           setSelectedPiece([row, col]);
           setActiveSequence(nextSequence);
-          if (isPieceKing && nextSequence.length > 1) {
-            toast.info("Continue the king's capture sequence!");
-          } else if (nextSequence.length > 1) {
-            toast.info("Continue the capture sequence!");
+          
+          if (nextSequence.length > 1) {
+            if (isPieceKing) {
+              toast.info("Continue the king's capture sequence!");
+            } else {
+              toast.info("Continue the capture sequence!");
+            }
           } else {
             setSelectedPiece(null);
             setActiveSequence(null);
@@ -96,10 +99,10 @@ const Index = () => {
       } else {
         if (captureInProgress) {
           toast.error("You must complete the capture sequence!");
+        } else {
+          setSelectedPiece(null);
+          setActiveSequence(null);
         }
-        setSelectedPiece(null);
-        setActiveSequence(null);
-        setCaptureInProgress(false);
       }
     }
   };

@@ -175,7 +175,7 @@ export const findCaptureSequences = (
           
           foundCapture = true;
           // Add this landing position to the sequence
-          const newSequence = [...sequence, [currentRow, currentCol]];
+          const newSequence = [...sequence, [currentRow, currentCol] as [number, number]];
           
           // Check for further captures from this position
           const furtherCaptures = findCaptureSequences(
@@ -190,6 +190,11 @@ export const findCaptureSequences = (
           if (furtherCaptures.length === 0 && newSequence.length > 1) {
             allSequences.push(newSequence);
           }
+          
+          // For kings, we need to check all possible landing spots after capturing
+          currentRow += dRow;
+          currentCol += dCol;
+          continue;
         }
         
         currentRow += dRow;
