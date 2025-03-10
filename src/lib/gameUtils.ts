@@ -163,47 +163,33 @@ export const findCaptureSequences = (
             enemyRow = currentRow;
             enemyCol = currentCol;
           } else {
-            break; // Either found second piece or found friendly piece
+            break;
           }
         } else if (foundEnemy) {
-          // Found empty space after enemy piece
-          
-          // Create a new board state for recursive checking
           const newBoard = board.map(row => [...row]);
-          newBoard[enemyRow][enemyCol] = 0; // Remove captured piece
-          newBoard[row][col] = 0;           // Remove moving piece
-          newBoard[currentRow][currentCol] = piece; // Place piece in new position
+          newBoard[enemyRow][enemyCol] = 0;
+          newBoard[row][col] = 0;
+          newBoard[currentRow][currentCol] = piece;
           
           foundCapture = true;
-          
-          // Add this landing position to the sequence
           const newSequence = [...sequence, [currentRow, currentCol] as [number, number]];
           
-          // Check for further captures from this position
           const furtherCaptures = findCaptureSequences(
             newBoard,
             currentRow,
             currentCol,
             newSequence,
-            []  // Use an empty array to collect only sequences from this position
+            []
           );
           
-          // If further captures are possible, add those sequences
           if (furtherCaptures.length > 0) {
             furtherCaptures.forEach(seq => {
               allSequences.push(seq);
             });
           } else if (newSequence.length > 1) {
-            // If no further captures possible, add the current sequence
             allSequences.push(newSequence);
           }
-          
-          // For kings, we need to check all possible landing spots after capturing
-          currentRow += dRow;
-          currentCol += dCol;
-          continue;
         }
-        
         currentRow += dRow;
         currentCol += dCol;
       }

@@ -53,20 +53,10 @@ const Index = () => {
       if (piece !== 0 && Math.sign(piece) === currentPlayer) {
         const sequences = findCaptureSequences(board, row, col);
         if (sequences.length > 0) {
-          // Find the longest sequence for kings
-          let longestSequence = sequences[0];
-          for (let i = 1; i < sequences.length; i++) {
-            if (sequences[i].length > longestSequence.length) {
-              longestSequence = sequences[i];
-            }
-          }
-          
-          setActiveSequence(longestSequence);
-          if (Math.abs(piece) === 2 && longestSequence.length > 2) {
-            toast.info("Multiple capture sequence available for king! You must complete all captures.");
+          // No longer show capture notifications
+          setActiveSequence(sequences[0]);
+          if (Math.abs(piece) === 2 && sequences[0].length > 2) {
             setCaptureInProgress(true);
-          } else if (longestSequence.length > 2) {
-            toast.info("Capture sequence available! You must complete the capture.");
           }
         }
         setSelectedPiece([row, col]);
@@ -82,22 +72,15 @@ const Index = () => {
         const isPieceKing = Math.abs(board[startRow][startCol]) === 2;
 
         if (activeSequence && activeSequence.length > 2) {
-          // Find the next position in the sequence
           const nextSequencePos = activeSequence.findIndex(
             pos => pos[0] === row && pos[1] === col
           );
           
           if (nextSequencePos > 0 && nextSequencePos < activeSequence.length - 1) {
-            // There are more captures to be made
             const remainingSequence = activeSequence.slice(nextSequencePos);
             setSelectedPiece([row, col]);
             setActiveSequence(remainingSequence);
-            
-            toast.info(isPieceKing 
-              ? "Continue the king's capture sequence!" 
-              : "Continue the capture sequence!");
           } else {
-            // End of sequence or not following the sequence
             setSelectedPiece(null);
             setActiveSequence(null);
             setCaptureInProgress(false);
