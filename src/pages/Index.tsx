@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Board from '@/components/Board';
 import { createInitialBoard, isValidMove, makeAIMove, executeMove, findCaptureSequences } from '@/lib/gameUtils';
@@ -54,11 +53,19 @@ const Index = () => {
       if (piece !== 0 && Math.sign(piece) === currentPlayer) {
         const sequences = findCaptureSequences(board, row, col);
         if (sequences.length > 0) {
-          setActiveSequence(sequences[0]);
-          if (Math.abs(piece) === 2 && sequences[0].length > 2) {
+          // Find the longest sequence for kings
+          let longestSequence = sequences[0];
+          for (let i = 1; i < sequences.length; i++) {
+            if (sequences[i].length > longestSequence.length) {
+              longestSequence = sequences[i];
+            }
+          }
+          
+          setActiveSequence(longestSequence);
+          if (Math.abs(piece) === 2 && longestSequence.length > 2) {
             toast.info("Multiple capture sequence available for king! You must complete all captures.");
             setCaptureInProgress(true);
-          } else if (sequences[0].length > 2) {
+          } else if (longestSequence.length > 2) {
             toast.info("Capture sequence available! You must complete the capture.");
           }
         }

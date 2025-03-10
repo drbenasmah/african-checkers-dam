@@ -191,9 +191,7 @@ export const findCaptureSequences = (
           // If further captures are possible, add those sequences
           if (furtherCaptures.length > 0) {
             furtherCaptures.forEach(seq => {
-              if (seq.length > newSequence.length) {
-                allSequences.push(seq);
-              }
+              allSequences.push(seq);
             });
           } else if (newSequence.length > 1) {
             // If no further captures possible, add the current sequence

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import Square from './Square';
 import { calculateSquareColor, findCaptureSequences } from '@/lib/gameUtils';
@@ -20,6 +21,7 @@ const Board: React.FC<BoardProps> = ({ selectedPiece, onSquareClick, board, acti
       return nextMove[0] === row && nextMove[1] === col;
     }
 
+    // Check all sequences for available next moves
     return availableMoves.some(sequence => 
       sequence.some((move, index) => 
         index > 0 && move[0] === row && move[1] === col
