@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import Board from '@/components/Board';
-import { createInitialBoard, isValidMove, makeAIMove, executeMove, findCaptureSequences } from '@/lib/gameUtils';
+import { createInitialBoard, isValidMove, makeAIMove, executeMove, findCaptureSequences, findAllPossibleMoves } from '@/lib/gameUtils';
 import { Button } from '@/components/ui/button';
 import { toast } from "sonner";
-import { Undo2 } from "lucide-react";
+import { Undo2, Trophy } from "lucide-react";
 
 type GameMode = 'single' | 'two-player';
 
@@ -22,9 +21,12 @@ const Index = () => {
   const [activeSequence, setActiveSequence] = useState<[number, number][] | null>(null);
   const [captureInProgress, setCaptureInProgress] = useState(false);
   const [moveHistory, setMoveHistory] = useState<GameState[]>([]);
+  const [lightScore, setLightScore] = useState(0);
+  const [darkScore, setDarkScore] = useState(0);
+  const [gameOver, setGameOver] = useState(false);
 
   useEffect(() => {
-    if (gameMode === 'single' && currentPlayer === -1 && gameStarted) {
+    if (gameMode === 'single' && currentPlayer === -1 && gameStarted && !gameOver) {
       const timeoutId = setTimeout(() => {
         // Save current state before AI move
         saveMoveToHistory();
@@ -36,12 +38,34 @@ const Index = () => {
           setBoard(newBoard);
           checkForKingPromotion(newBoard);
           setCurrentPlayer(1);
+          checkGameOver(newBoard, 1);
+        } else {
+          // If AI can't make a move, player wins
+          handleWin(1);
         }
       }, 500);
       
       return () => clearTimeout(timeoutId);
     }
-  }, [currentPlayer, board, gameMode, gameStarted]);
+  }, [currentPlayer, board, gameMode, gameStarted, gameOver]);
+
+  const checkGameOver = (currentBoard: number[][], nextPlayer: 1 | -1) => {
+    const possibleMoves = findAllPossibleMoves(currentBoard, nextPlayer);
+    if (possibleMoves.length === 0) {
+      handleWin(nextPlayer === 1 ? -1 : 1);
+    }
+  };
+
+  const handleWin = (winner: 1 | -1) => {
+    setGameOver(true);
+    if (winner === 1) {
+      setLightScore(prev => prev + 1);
+      toast.success("Light player wins!");
+    } else {
+      setDarkScore(prev => prev + 1);
+      toast.success("Dark player wins!");
+    }
+  };
 
   const saveMoveToHistory = () => {
     setMoveHistory(prev => [...prev, { board: JSON.parse(JSON.stringify(board)), currentPlayer }]);
@@ -75,7 +99,7 @@ const Index = () => {
   };
 
   const handleSquareClick = (row: number, col: number) => {
-    if (!gameStarted || (gameMode === 'single' && currentPlayer === -1)) return;
+    if (!gameStarted || gameOver || (gameMode === 'single' && currentPlayer === -1)) return;
 
     if (selectedPiece === null) {
       const piece = board[row][col];
@@ -156,7 +180,9 @@ const Index = () => {
     setSelectedPiece(null);
     setActiveSequence(null);
     setCaptureInProgress(false);
-    setCurrentPlayer(prev => prev === 1 ? -1 : 1);
+    const nextPlayer = currentPlayer === 1 ? -1 : 1;
+    setCurrentPlayer(nextPlayer);
+    checkGameOver(board, nextPlayer);
   };
 
   const startNewGame = (mode: GameMode) => {
@@ -167,6 +193,7 @@ const Index = () => {
     setCurrentPlayer(1);
     setGameStarted(true);
     setMoveHistory([]);
+    setGameOver(false);
   };
 
   const resetGame = () => {
@@ -177,6 +204,12 @@ const Index = () => {
     setCurrentPlayer(1);
     setGameStarted(false);
     setMoveHistory([]);
+    setGameOver(false);
+  };
+
+  const resetScores = () => {
+    setLightScore(0);
+    setDarkScore(0);
   };
 
   if (!gameStarted) {
@@ -207,13 +240,41 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-100 flex flex-col items-center justify-center p-4 gap-8">
       <div className="text-center">
         <h1 className="text-4xl font-bold text-board-dark mb-2">International Checkers</h1>
+        
+        <div className="flex justify-center items-center gap-8 mb-4">
+          <div className="flex flex-col items-center bg-board-light p-3 rounded-lg shadow-md">
+            <div className="flex items-center gap-2">
+              <span className="inline-block w-4 h-4 rounded-full bg-piece-light border border-gray-300"></span>
+              <span className="font-semibold">Light</span>
+            </div>
+            <div className="flex items-center mt-1">
+              <Trophy className="text-yellow-500 w-5 h-5 mr-1" />
+              <span className="text-xl font-bold">{lightScore}</span>
+            </div>
+          </div>
+          
+          <div className="flex flex-col items-center bg-board-dark p-3 rounded-lg shadow-md text-white">
+            <div className="flex items-center gap-2">
+              <span className="inline-block w-4 h-4 rounded-full bg-piece-dark border border-gray-300"></span>
+              <span className="font-semibold">Dark</span>
+            </div>
+            <div className="flex items-center mt-1">
+              <Trophy className="text-yellow-500 w-5 h-5 mr-1" />
+              <span className="text-xl font-bold">{darkScore}</span>
+            </div>
+          </div>
+        </div>
+        
         <p className="text-lg text-muted-foreground mb-4">
-          {gameMode === 'single' && currentPlayer === -1 
-            ? "AI's turn..." 
-            : `Current Player: ${currentPlayer === 1 ? 'Light' : 'Dark'}`
+          {gameOver ? 
+            "Game Over! Start a new game." : 
+            gameMode === 'single' && currentPlayer === -1 ? 
+              "AI's turn..." : 
+              `Current Player: ${currentPlayer === 1 ? 'Light' : 'Dark'}`
           }
         </p>
-        <div className="flex gap-4 justify-center mb-8">
+        
+        <div className="flex gap-4 justify-center mb-8 flex-wrap">
           <Button onClick={resetGame} variant="outline">
             New Game
           </Button>
@@ -223,9 +284,12 @@ const Index = () => {
           <Button 
             onClick={undoMove} 
             variant="outline" 
-            disabled={moveHistory.length === 0 || (gameMode === 'single' && currentPlayer === -1)}
+            disabled={moveHistory.length === 0 || gameOver || (gameMode === 'single' && currentPlayer === -1)}
           >
             <Undo2 className="mr-2" /> Undo
+          </Button>
+          <Button onClick={resetScores} variant="outline">
+            Reset Scores
           </Button>
         </div>
       </div>
