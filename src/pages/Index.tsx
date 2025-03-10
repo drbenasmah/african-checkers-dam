@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Board from '@/components/Board';
 import { createInitialBoard, isValidMove, makeAIMove, executeMove, findCaptureSequences } from '@/lib/gameUtils';
@@ -51,56 +52,77 @@ const Index = () => {
     if (selectedPiece === null) {
       const piece = board[row][col];
       if (piece !== 0 && Math.sign(piece) === currentPlayer) {
-        const sequences = findCaptureSequences(board, row, col);
-        if (sequences.length > 0) {
-          // No longer show capture notifications
-          setActiveSequence(sequences[0]);
-          if (Math.abs(piece) === 2 && sequences[0].length > 2) {
-            setCaptureInProgress(true);
-          }
-        }
+        // Find all possible capture sequences for the selected piece
+        const allSequences = findCaptureSequences(board, row, col);
         setSelectedPiece([row, col]);
+        
+        // If there are capture sequences, prepare for capture
+        if (allSequences.length > 0) {
+          setCaptureInProgress(Math.abs(piece) === 2 && allSequences.some(seq => seq.length > 2));
+          // Don't pre-set an active sequence - let the player choose their path
+        }
       }
     } else {
       const [startRow, startCol] = selectedPiece;
       
-      if (isValidMove(board, startRow, startCol, row, col)) {
+      // Find all possible capture sequences for the selected piece
+      const allSequences = findCaptureSequences(board, startRow, startCol);
+      
+      // Check if the clicked position is a valid next move in any sequence
+      const isValidNextMove = allSequences.some(sequence => 
+        sequence.length > 1 && sequence[1][0] === row && sequence[1][1] === col
+      );
+      
+      if (isValidNextMove) {
+        // Execute the move
         const newBoard = executeMove(board, startRow, startCol, row, col);
         setBoard(newBoard);
         checkForKingPromotion(newBoard);
-
-        const isPieceKing = Math.abs(board[startRow][startCol]) === 2;
-
-        if (activeSequence && activeSequence.length > 2) {
-          const nextSequencePos = activeSequence.findIndex(
-            pos => pos[0] === row && pos[1] === col
-          );
+        
+        // Find the sequence that matches the move for continuing the capture
+        const matchingSequence = allSequences.find(sequence => 
+          sequence.length > 1 && sequence[1][0] === row && sequence[1][1] === col
+        );
+        
+        // Check if there are more captures in this sequence
+        if (matchingSequence && matchingSequence.length > 2) {
+          // Update activeSequence to the remaining part of the sequence
+          setActiveSequence(matchingSequence.slice(1));
+          setSelectedPiece([row, col]);
           
-          if (nextSequencePos > 0 && nextSequencePos < activeSequence.length - 1) {
-            const remainingSequence = activeSequence.slice(nextSequencePos);
-            setSelectedPiece([row, col]);
-            setActiveSequence(remainingSequence);
+          // Check if further captures are possible from new position
+          const furtherCaptures = findCaptureSequences(newBoard, row, col);
+          if (furtherCaptures.length > 0 && furtherCaptures.some(seq => seq.length > 1)) {
+            setCaptureInProgress(true);
           } else {
-            setSelectedPiece(null);
-            setActiveSequence(null);
-            setCaptureInProgress(false);
-            setCurrentPlayer(prev => prev === 1 ? -1 : 1);
+            // No more captures possible
+            finishMove();
           }
         } else {
-          setSelectedPiece(null);
-          setActiveSequence(null);
-          setCaptureInProgress(false);
-          setCurrentPlayer(prev => prev === 1 ? -1 : 1);
+          // No more captures in this sequence
+          finishMove();
         }
+      } else if (captureInProgress) {
+        toast.error("You must complete a capture sequence!");
+      } else if (isValidMove(board, startRow, startCol, row, col)) {
+        // Regular non-capture move
+        const newBoard = executeMove(board, startRow, startCol, row, col);
+        setBoard(newBoard);
+        checkForKingPromotion(newBoard);
+        finishMove();
       } else {
-        if (captureInProgress) {
-          toast.error("You must complete the capture sequence!");
-        } else {
-          setSelectedPiece(null);
-          setActiveSequence(null);
-        }
+        // Invalid move, reset selection
+        setSelectedPiece(null);
+        setActiveSequence(null);
       }
     }
+  };
+  
+  const finishMove = () => {
+    setSelectedPiece(null);
+    setActiveSequence(null);
+    setCaptureInProgress(false);
+    setCurrentPlayer(prev => prev === 1 ? -1 : 1);
   };
 
   const startNewGame = (mode: GameMode) => {

@@ -16,16 +16,17 @@ const Board: React.FC<BoardProps> = ({ selectedPiece, onSquareClick, board, acti
     : [];
 
   const isAvailableMove = (row: number, col: number): boolean => {
+    if (!selectedPiece) return false;
+    
+    // If a capture is in progress and we have an active sequence
     if (activeSequence && activeSequence.length > 1) {
       const nextMove = activeSequence[1];
       return nextMove[0] === row && nextMove[1] === col;
     }
 
-    // Check all sequences for available next moves
+    // Show all possible next moves from all sequences
     return availableMoves.some(sequence => 
-      sequence.some((move, index) => 
-        index > 0 && move[0] === row && move[1] === col
-      )
+      sequence.length > 1 && sequence[1][0] === row && sequence[1][1] === col
     );
   };
 
