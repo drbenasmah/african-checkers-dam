@@ -4,8 +4,14 @@ import Board from '@/components/Board';
 import { createInitialBoard, isValidMove, makeAIMove, executeMove, findCaptureSequences } from '@/lib/gameUtils';
 import { Button } from '@/components/ui/button';
 import { toast } from "sonner";
+import { Undo2 } from "lucide-react";
 
 type GameMode = 'single' | 'two-player';
+
+type GameState = {
+  board: number[][];
+  currentPlayer: 1 | -1;
+};
 
 const Index = () => {
   const [board, setBoard] = useState(createInitialBoard());
@@ -15,10 +21,14 @@ const Index = () => {
   const [gameStarted, setGameStarted] = useState(false);
   const [activeSequence, setActiveSequence] = useState<[number, number][] | null>(null);
   const [captureInProgress, setCaptureInProgress] = useState(false);
+  const [moveHistory, setMoveHistory] = useState<GameState[]>([]);
 
   useEffect(() => {
     if (gameMode === 'single' && currentPlayer === -1 && gameStarted) {
       const timeoutId = setTimeout(() => {
+        // Save current state before AI move
+        saveMoveToHistory();
+        
         const aiMove = makeAIMove(board);
         if (aiMove) {
           const [startRow, startCol, endRow, endCol] = aiMove;
@@ -32,6 +42,24 @@ const Index = () => {
       return () => clearTimeout(timeoutId);
     }
   }, [currentPlayer, board, gameMode, gameStarted]);
+
+  const saveMoveToHistory = () => {
+    setMoveHistory(prev => [...prev, { board: JSON.parse(JSON.stringify(board)), currentPlayer }]);
+  };
+
+  const undoMove = () => {
+    if (moveHistory.length === 0) return;
+    
+    const previousState = moveHistory[moveHistory.length - 1];
+    setBoard(previousState.board);
+    setCurrentPlayer(previousState.currentPlayer);
+    setSelectedPiece(null);
+    setActiveSequence(null);
+    setCaptureInProgress(false);
+    
+    // Remove the last move from history
+    setMoveHistory(prev => prev.slice(0, -1));
+  };
 
   const checkForKingPromotion = (board: number[][]) => {
     for (let col = 0; col < 10; col++) {
@@ -74,6 +102,9 @@ const Index = () => {
       );
       
       if (isValidNextMove) {
+        // Save current state before making a move
+        saveMoveToHistory();
+        
         // Execute the move
         const newBoard = executeMove(board, startRow, startCol, row, col);
         setBoard(newBoard);
@@ -105,6 +136,9 @@ const Index = () => {
       } else if (captureInProgress) {
         toast.error("You must complete a capture sequence!");
       } else if (isValidMove(board, startRow, startCol, row, col)) {
+        // Save current state before making a move
+        saveMoveToHistory();
+        
         // Regular non-capture move
         const newBoard = executeMove(board, startRow, startCol, row, col);
         setBoard(newBoard);
@@ -132,6 +166,7 @@ const Index = () => {
     setActiveSequence(null);
     setCurrentPlayer(1);
     setGameStarted(true);
+    setMoveHistory([]);
   };
 
   const resetGame = () => {
@@ -141,6 +176,7 @@ const Index = () => {
     setActiveSequence(null);
     setCurrentPlayer(1);
     setGameStarted(false);
+    setMoveHistory([]);
   };
 
   if (!gameStarted) {
@@ -183,6 +219,13 @@ const Index = () => {
           </Button>
           <Button onClick={() => startNewGame(gameMode)} variant="outline">
             Restart
+          </Button>
+          <Button 
+            onClick={undoMove} 
+            variant="outline" 
+            disabled={moveHistory.length === 0 || (gameMode === 'single' && currentPlayer === -1)}
+          >
+            <Undo2 className="mr-2" /> Undo
           </Button>
         </div>
       </div>
