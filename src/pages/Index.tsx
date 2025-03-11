@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import Board from '@/components/Board';
-import { createInitialBoard, isValidMove, makeAIMove, executeMove, findCaptureSequences, findAllPossibleMoves } from '@/lib/gameUtils';
+import { createInitialBoard, isValidMove, executeMove, findCaptureSequences, findAllPossibleMoves } from '@/lib/gameUtils';
+import { makeAIMove, DifficultyLevel } from '@/lib/aiService';
 import { Button } from '@/components/ui/button';
 import { toast } from "sonner";
-import { Undo2, Trophy } from "lucide-react";
+import { Undo2, Trophy, Brain } from "lucide-react";
 
 type GameMode = 'single' | 'two-player';
 
@@ -17,6 +18,7 @@ const Index = () => {
   const [selectedPiece, setSelectedPiece] = useState<[number, number] | null>(null);
   const [currentPlayer, setCurrentPlayer] = useState<1 | -1>(1);
   const [gameMode, setGameMode] = useState<GameMode | null>(null);
+  const [difficultyLevel, setDifficultyLevel] = useState<DifficultyLevel>('beginner');
   const [gameStarted, setGameStarted] = useState(false);
   const [activeSequence, setActiveSequence] = useState<[number, number][] | null>(null);
   const [captureInProgress, setCaptureInProgress] = useState(false);
@@ -31,7 +33,7 @@ const Index = () => {
         // Save current state before AI move
         saveMoveToHistory();
         
-        const aiMove = makeAIMove(board);
+        const aiMove = makeAIMove(board, difficultyLevel);
         if (aiMove) {
           const [startRow, startCol, endRow, endCol] = aiMove;
           const newBoard = executeMove(board, startRow, startCol, endRow, endCol);
@@ -47,7 +49,7 @@ const Index = () => {
       
       return () => clearTimeout(timeoutId);
     }
-  }, [currentPlayer, board, gameMode, gameStarted, gameOver]);
+  }, [currentPlayer, board, gameMode, gameStarted, gameOver, difficultyLevel]);
 
   const checkGameOver = (currentBoard: number[][], nextPlayer: 1 | -1) => {
     const possibleMoves = findAllPossibleMoves(currentBoard, nextPlayer);
@@ -217,6 +219,35 @@ const Index = () => {
       <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-100 flex flex-col items-center justify-center p-4 gap-8">
         <h1 className="text-4xl font-bold text-board-dark mb-8">International Checkers</h1>
         <div className="flex flex-col gap-4">
+          <div className="bg-white p-6 rounded-lg shadow-md mb-4">
+            <h2 className="text-xl font-semibold mb-4 flex items-center">
+              <Brain className="mr-2" /> AI Difficulty
+            </h2>
+            <div className="flex flex-col gap-2">
+              <Button 
+                onClick={() => setDifficultyLevel('beginner')}
+                variant={difficultyLevel === 'beginner' ? 'default' : 'outline'}
+                className="w-full justify-start"
+              >
+                Beginner
+              </Button>
+              <Button 
+                onClick={() => setDifficultyLevel('intermediate')}
+                variant={difficultyLevel === 'intermediate' ? 'default' : 'outline'}
+                className="w-full justify-start"
+              >
+                Intermediate
+              </Button>
+              <Button 
+                onClick={() => setDifficultyLevel('advanced')}
+                variant={difficultyLevel === 'advanced' ? 'default' : 'outline'}
+                className="w-full justify-start"
+              >
+                Advanced
+              </Button>
+            </div>
+          </div>
+          
           <Button 
             onClick={() => startNewGame('single')}
             className="w-48 text-lg"
@@ -269,7 +300,7 @@ const Index = () => {
           {gameOver ? 
             "Game Over! Start a new game." : 
             gameMode === 'single' && currentPlayer === -1 ? 
-              "AI's turn..." : 
+              `AI's turn... (${difficultyLevel} level)` : 
               `Current Player: ${currentPlayer === 1 ? 'Light' : 'Dark'}`
           }
         </p>
