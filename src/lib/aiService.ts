@@ -1,5 +1,5 @@
 
-import { findAllPossibleMoves, executeMove } from './gameUtils';
+import { findAllPossibleMoves, executeMove, findCaptureSequences } from './gameUtils';
 
 export type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced';
 
@@ -36,6 +36,50 @@ const evaluateBoard = (board: number[][]): number => {
   return score;
 };
 
+// Find the best capture sequence for a move
+const findBestCaptureSequence = (
+  board: number[][],
+  startRow: number,
+  startCol: number
+): [number, number][] | null => {
+  const sequences = findCaptureSequences(board, startRow, startCol);
+  
+  if (sequences.length === 0) return null;
+  
+  // Find the longest capture sequence
+  let bestSequence = sequences[0];
+  
+  for (const sequence of sequences) {
+    if (sequence.length > bestSequence.length) {
+      bestSequence = sequence;
+    }
+  }
+  
+  return bestSequence;
+};
+
+// Execute a full capture sequence and return the final board state
+const executeFullCaptureSequence = (
+  board: number[][],
+  sequence: [number, number][]
+): number[][] => {
+  if (sequence.length <= 1) return board;
+  
+  let currentBoard = board;
+  let startRow = sequence[0][0];
+  let startCol = sequence[0][1];
+  
+  // Execute each step in the sequence
+  for (let i = 1; i < sequence.length; i++) {
+    const [endRow, endCol] = sequence[i];
+    currentBoard = executeMove(currentBoard, startRow, startCol, endRow, endCol);
+    startRow = endRow;
+    startCol = endCol;
+  }
+  
+  return currentBoard;
+};
+
 // Minimax algorithm with alpha-beta pruning
 const minimax = (
   board: number[][],
@@ -61,7 +105,21 @@ const minimax = (
     let maxEval = -Infinity;
     
     for (const [startRow, startCol, endRow, endCol] of possibleMoves) {
-      const newBoard = executeMove(board, startRow, startCol, endRow, endCol);
+      // First execute the initial move
+      let newBoard = executeMove(board, startRow, startCol, endRow, endCol);
+      
+      // Check if this is a capture move (distance > 1)
+      const isCapture = Math.abs(startRow - endRow) > 1;
+      
+      // If it's a capture, look for additional captures in the sequence
+      if (isCapture) {
+        const captureSequence = findBestCaptureSequence(newBoard, endRow, endCol);
+        if (captureSequence && captureSequence.length > 1) {
+          // Execute the full capture sequence
+          newBoard = executeFullCaptureSequence(newBoard, captureSequence);
+        }
+      }
+      
       const evaluation = minimax(newBoard, depth - 1, alpha, beta, false, currentPlayer === 1 ? -1 : 1);
       maxEval = Math.max(maxEval, evaluation);
       
@@ -75,7 +133,21 @@ const minimax = (
     let minEval = Infinity;
     
     for (const [startRow, startCol, endRow, endCol] of possibleMoves) {
-      const newBoard = executeMove(board, startRow, startCol, endRow, endCol);
+      // First execute the initial move
+      let newBoard = executeMove(board, startRow, startCol, endRow, endCol);
+      
+      // Check if this is a capture move (distance > 1)
+      const isCapture = Math.abs(startRow - endRow) > 1;
+      
+      // If it's a capture, look for additional captures in the sequence
+      if (isCapture) {
+        const captureSequence = findBestCaptureSequence(newBoard, endRow, endCol);
+        if (captureSequence && captureSequence.length > 1) {
+          // Execute the full capture sequence
+          newBoard = executeFullCaptureSequence(newBoard, captureSequence);
+        }
+      }
+      
       const evaluation = minimax(newBoard, depth - 1, alpha, beta, true, currentPlayer === 1 ? -1 : 1);
       minEval = Math.min(minEval, evaluation);
       
@@ -112,7 +184,21 @@ export const makeAIMove = (
   // Evaluate each move
   for (const move of possibleMoves) {
     const [startRow, startCol, endRow, endCol] = move;
-    const newBoard = executeMove(board, startRow, startCol, endRow, endCol);
+    
+    // First execute the initial move
+    let newBoard = executeMove(board, startRow, startCol, endRow, endCol);
+    
+    // Check if this is a capture move (distance > 1)
+    const isCapture = Math.abs(startRow - endRow) > 1;
+    
+    // If it's a capture, look for additional captures in the sequence
+    if (isCapture) {
+      const captureSequence = findBestCaptureSequence(newBoard, endRow, endCol);
+      if (captureSequence && captureSequence.length > 1) {
+        // For evaluation, execute the full capture sequence
+        newBoard = executeFullCaptureSequence(newBoard, captureSequence);
+      }
+    }
     
     // Evaluate this move
     const score = minimax(newBoard, depth - 1, -Infinity, Infinity, false, 1);

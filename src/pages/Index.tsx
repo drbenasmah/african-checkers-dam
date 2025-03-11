@@ -36,8 +36,66 @@ const Index = () => {
         const aiMove = makeAIMove(board, difficultyLevel);
         if (aiMove) {
           const [startRow, startCol, endRow, endCol] = aiMove;
-          const newBoard = executeMove(board, startRow, startCol, endRow, endCol);
+          let newBoard = executeMove(board, startRow, startCol, endRow, endCol);
           setBoard(newBoard);
+          
+          // Check if this was a capture move
+          const isCapture = Math.abs(startRow - endRow) > 1;
+          
+          if (isCapture) {
+            // Look for additional captures (multi-capturing)
+            const captureSequences = findCaptureSequences(newBoard, endRow, endCol);
+            
+            if (captureSequences.length > 0 && captureSequences.some(seq => seq.length > 1)) {
+              // Find the longest capture sequence
+              let bestSequence = captureSequences[0];
+              for (const sequence of captureSequences) {
+                if (sequence.length > bestSequence.length) {
+                  bestSequence = sequence;
+                }
+              }
+              
+              // If there's a valid sequence, execute it step by step with a delay
+              if (bestSequence.length > 1) {
+                let currentBoard = newBoard;
+                let currentRow = endRow;
+                let currentCol = endCol;
+                
+                // Execute each step in the sequence
+                for (let i = 1; i < bestSequence.length; i++) {
+                  const [nextRow, nextCol] = bestSequence[i];
+                  
+                  // Use a closure to preserve the current values
+                  ((i, currentRow, currentCol, nextRow, nextCol) => {
+                    setTimeout(() => {
+                      const updatedBoard = executeMove(
+                        i === 1 ? newBoard : JSON.parse(JSON.stringify(board)), 
+                        currentRow, 
+                        currentCol, 
+                        nextRow, 
+                        nextCol
+                      );
+                      setBoard(updatedBoard);
+                    }, 300 * i);
+                  })(i, currentRow, currentCol, nextRow, nextCol);
+                  
+                  currentRow = nextRow;
+                  currentCol = nextCol;
+                }
+                
+                // Final check after the entire sequence
+                setTimeout(() => {
+                  checkForKingPromotion(board);
+                  setCurrentPlayer(1);
+                  checkGameOver(board, 1);
+                }, 300 * bestSequence.length);
+                
+                return;
+              }
+            }
+          }
+          
+          // If no multi-capturing, proceed normally
           checkForKingPromotion(newBoard);
           setCurrentPlayer(1);
           checkGameOver(newBoard, 1);
