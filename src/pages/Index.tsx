@@ -110,6 +110,26 @@ const Index = () => {
   }, [currentPlayer, board, gameMode, gameStarted, gameOver, difficultyLevel]);
 
   const checkGameOver = (currentBoard: number[][], nextPlayer: 1 | -1) => {
+    let lightPieces = 0;
+    let darkPieces = 0;
+    
+    for (let row = 0; row < 10; row++) {
+      for (let col = 0; col < 10; col++) {
+        const piece = currentBoard[row][col];
+        if (piece > 0) lightPieces++;
+        if (piece < 0) darkPieces++;
+      }
+    }
+    
+    if (lightPieces <= 1) {
+      handleWin(-1);
+      return;
+    }
+    if (darkPieces <= 1) {
+      handleWin(1);
+      return;
+    }
+    
     const possibleMoves = findAllPossibleMoves(currentBoard, nextPlayer);
     if (possibleMoves.length === 0) {
       handleWin(nextPlayer === 1 ? -1 : 1);
@@ -141,7 +161,6 @@ const Index = () => {
     setActiveSequence(null);
     setCaptureInProgress(false);
     
-    // Remove the last move from history
     setMoveHistory(prev => prev.slice(0, -1));
   };
 
