@@ -30,7 +30,6 @@ const Index = () => {
   useEffect(() => {
     if (gameMode === 'single' && currentPlayer === -1 && gameStarted && !gameOver) {
       const timeoutId = setTimeout(() => {
-        // Save current state before AI move
         saveMoveToHistory();
         
         const aiMove = makeAIMove(board, difficultyLevel);
@@ -39,15 +38,12 @@ const Index = () => {
           let newBoard = executeMove(board, startRow, startCol, endRow, endCol);
           setBoard(newBoard);
           
-          // Check if this was a capture move
           const isCapture = Math.abs(startRow - endRow) > 1;
           
           if (isCapture) {
-            // Look for additional captures (multi-capturing)
             const captureSequences = findCaptureSequences(newBoard, endRow, endCol);
             
             if (captureSequences.length > 0 && captureSequences.some(seq => seq.length > 1)) {
-              // Find the longest capture sequence
               let bestSequence = captureSequences[0];
               for (const sequence of captureSequences) {
                 if (sequence.length > bestSequence.length) {
@@ -55,17 +51,14 @@ const Index = () => {
                 }
               }
               
-              // If there's a valid sequence, execute it step by step with a delay
               if (bestSequence.length > 1) {
                 let currentBoard = newBoard;
                 let currentRow = endRow;
                 let currentCol = endCol;
                 
-                // Execute each step in the sequence
                 for (let i = 1; i < bestSequence.length; i++) {
                   const [nextRow, nextCol] = bestSequence[i];
                   
-                  // Use a closure to preserve the current values
                   ((i, currentRow, currentCol, nextRow, nextCol) => {
                     setTimeout(() => {
                       const updatedBoard = executeMove(
@@ -83,7 +76,6 @@ const Index = () => {
                   currentCol = nextCol;
                 }
                 
-                // Final check after the entire sequence
                 setTimeout(() => {
                   checkForKingPromotion(board);
                   setCurrentPlayer(1);
@@ -95,12 +87,10 @@ const Index = () => {
             }
           }
           
-          // If no multi-capturing, proceed normally
           checkForKingPromotion(newBoard);
           setCurrentPlayer(1);
           checkGameOver(newBoard, 1);
         } else {
-          // If AI can't make a move, player wins
           handleWin(1);
         }
       }, 500);
@@ -183,72 +173,56 @@ const Index = () => {
     if (selectedPiece === null) {
       const piece = board[row][col];
       if (piece !== 0 && Math.sign(piece) === currentPlayer) {
-        // Find all possible capture sequences for the selected piece
         const allSequences = findCaptureSequences(board, row, col);
         setSelectedPiece([row, col]);
         
-        // If there are capture sequences, prepare for capture
         if (allSequences.length > 0) {
           setCaptureInProgress(Math.abs(piece) === 2 && allSequences.some(seq => seq.length > 2));
-          // Don't pre-set an active sequence - let the player choose their path
         }
       }
     } else {
       const [startRow, startCol] = selectedPiece;
       
-      // Find all possible capture sequences for the selected piece
       const allSequences = findCaptureSequences(board, startRow, startCol);
       
-      // Check if the clicked position is a valid next move in any sequence
       const isValidNextMove = allSequences.some(sequence => 
         sequence.length > 1 && sequence[1][0] === row && sequence[1][1] === col
       );
       
       if (isValidNextMove) {
-        // Save current state before making a move
         saveMoveToHistory();
         
-        // Execute the move
         const newBoard = executeMove(board, startRow, startCol, row, col);
         setBoard(newBoard);
         checkForKingPromotion(newBoard);
         
-        // Find the sequence that matches the move for continuing the capture
         const matchingSequence = allSequences.find(sequence => 
           sequence.length > 1 && sequence[1][0] === row && sequence[1][1] === col
         );
         
-        // Check if there are more captures in this sequence
         if (matchingSequence && matchingSequence.length > 2) {
-          // Update activeSequence to the remaining part of the sequence
           setActiveSequence(matchingSequence.slice(1));
           setSelectedPiece([row, col]);
           
-          // Check if further captures are possible from new position
           const furtherCaptures = findCaptureSequences(newBoard, row, col);
           if (furtherCaptures.length > 0 && furtherCaptures.some(seq => seq.length > 1)) {
             setCaptureInProgress(true);
           } else {
-            // No more captures possible
             finishMove();
           }
         } else {
-          // No more captures in this sequence
           finishMove();
         }
       } else if (captureInProgress) {
         toast.error("You must complete a capture sequence!");
       } else if (isValidMove(board, startRow, startCol, row, col)) {
-        // Save current state before making a move
         saveMoveToHistory();
         
-        // Regular non-capture move
         const newBoard = executeMove(board, startRow, startCol, row, col);
         setBoard(newBoard);
         checkForKingPromotion(newBoard);
         finishMove();
       } else {
-        // Invalid move, reset selection
         setSelectedPiece(null);
         setActiveSequence(null);
       }
@@ -321,6 +295,13 @@ const Index = () => {
                 className="w-full justify-start"
               >
                 Advanced
+              </Button>
+              <Button 
+                onClick={() => setDifficultyLevel('expert')}
+                variant={difficultyLevel === 'expert' ? 'default' : 'outline'}
+                className="w-full justify-start"
+              >
+                Expert
               </Button>
             </div>
           </div>

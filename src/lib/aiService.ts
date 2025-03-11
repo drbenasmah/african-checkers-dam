@@ -1,7 +1,6 @@
-
 import { findAllPossibleMoves, executeMove, findCaptureSequences } from './gameUtils';
 
-export type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced';
+export type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced' | 'expert';
 
 // Evaluate the board position for the AI player (-1)
 // Higher score is better for the AI
@@ -174,8 +173,10 @@ export const makeAIMove = (
     return possibleMoves[randomIndex];
   }
   
-  // Intermediate and Advanced: Use minimax with different depths
-  const depth = difficultyLevel === 'intermediate' ? 3 : 5;
+  // Intermediate, Advanced, and Expert: Use minimax with different depths
+  const depth = 
+    difficultyLevel === 'intermediate' ? 3 : 
+    difficultyLevel === 'advanced' ? 5 : 7; // Expert uses depth 7
   
   // Default to random move as fallback
   let bestMove = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
