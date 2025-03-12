@@ -41,7 +41,7 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 gap-8">
+    <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-100 flex flex-col items-center justify-center p-4 gap-8">
       <GameHeader
         lightScore={lightScore}
         darkScore={darkScore}
