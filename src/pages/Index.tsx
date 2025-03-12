@@ -3,6 +3,7 @@ import React from 'react';
 import Board from '@/components/Board';
 import GameSetup from '@/components/GameSetup';
 import GameHeader from '@/components/GameHeader';
+import Footer from '@/components/Footer';
 import { useGameLogic } from '@/hooks/useGameLogic';
 
 const Index = () => {
@@ -28,11 +29,14 @@ const Index = () => {
 
   if (!gameStarted) {
     return (
-      <GameSetup 
-        difficultyLevel={difficultyLevel}
-        setDifficultyLevel={setDifficultyLevel}
-        startNewGame={startNewGame}
-      />
+      <>
+        <GameSetup 
+          difficultyLevel={difficultyLevel}
+          setDifficultyLevel={setDifficultyLevel}
+          startNewGame={startNewGame}
+        />
+        <Footer />
+      </>
     );
   }
 
@@ -58,6 +62,8 @@ const Index = () => {
         onSquareClick={handleSquareClick}
         activeSequence={activeSequence || undefined}
       />
+      
+      <Footer />
     </div>
   );
 };
