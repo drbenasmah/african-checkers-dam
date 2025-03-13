@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Brain } from "lucide-react";
+import { Brain, Circle, CircleDot, CircleDashed, Crown } from "lucide-react";
 import { Button } from '@/components/ui/button';
 import { DifficultyLevel } from '@/lib/aiService';
 
@@ -32,30 +32,61 @@ const GameSetup: React.FC<GameSetupProps> = ({
             <Button 
               onClick={() => setDifficultyLevel('beginner')}
               variant={difficultyLevel === 'beginner' ? 'default' : 'outline'}
-              className="w-full justify-start"
+              className="w-full justify-start group transition-all duration-200"
             >
-              Beginner
+              <div className="flex items-center">
+                <Circle className="mr-2 text-piece-dark" />
+                <span>Beginner</span>
+              </div>
+              {difficultyLevel === 'beginner' && (
+                <span className="ml-auto text-xs bg-white/20 px-2 py-1 rounded-full">Selected</span>
+              )}
             </Button>
             <Button 
               onClick={() => setDifficultyLevel('intermediate')}
               variant={difficultyLevel === 'intermediate' ? 'default' : 'outline'}
-              className="w-full justify-start"
+              className="w-full justify-start group transition-all duration-200"
             >
-              Intermediate
+              <div className="flex items-center">
+                <div className="flex mr-2">
+                  <Circle className="text-piece-dark" />
+                  <Circle className="text-piece-dark -ml-1" />
+                </div>
+                <span>Intermediate</span>
+              </div>
+              {difficultyLevel === 'intermediate' && (
+                <span className="ml-auto text-xs bg-white/20 px-2 py-1 rounded-full">Selected</span>
+              )}
             </Button>
             <Button 
               onClick={() => setDifficultyLevel('advanced')}
               variant={difficultyLevel === 'advanced' ? 'default' : 'outline'}
-              className="w-full justify-start"
+              className="w-full justify-start group transition-all duration-200"
             >
-              Advanced
+              <div className="flex items-center">
+                <div className="flex mr-2">
+                  <Circle className="text-piece-dark" />
+                  <Circle className="text-piece-dark -ml-1" />
+                  <Circle className="text-piece-dark -ml-1" />
+                </div>
+                <span>Advanced</span>
+              </div>
+              {difficultyLevel === 'advanced' && (
+                <span className="ml-auto text-xs bg-white/20 px-2 py-1 rounded-full">Selected</span>
+              )}
             </Button>
             <Button 
               onClick={() => setDifficultyLevel('expert')}
               variant={difficultyLevel === 'expert' ? 'default' : 'outline'}
-              className="w-full justify-start"
+              className="w-full justify-start group transition-all duration-200"
             >
-              Expert
+              <div className="flex items-center">
+                <Crown className="mr-2 text-piece-dark" />
+                <span>Expert</span>
+              </div>
+              {difficultyLevel === 'expert' && (
+                <span className="ml-auto text-xs bg-white/20 px-2 py-1 rounded-full">Selected</span>
+              )}
             </Button>
           </div>
         </div>
