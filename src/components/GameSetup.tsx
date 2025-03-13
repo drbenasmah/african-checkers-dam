@@ -17,7 +17,12 @@ const GameSetup: React.FC<GameSetupProps> = ({
 }) => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 gap-8">
-      <h1 className="text-4xl font-bold text-board-dark mb-8 font-playfair">International Checkers</h1>
+      <div className="text-center mb-8">
+        <h1 className="text-5xl font-bold text-board-dark font-playfair drop-shadow-md mb-2 bg-gradient-to-b from-board-dark to-board-dark/80 bg-clip-text text-transparent">
+          International Checkers
+        </h1>
+        <p className="text-lg text-gray-600 italic">Classic Strategy, Modern Challenge</p>
+      </div>
       <div className="flex flex-col gap-4">
         <div className="bg-white/90 backdrop-blur-sm p-6 rounded-lg shadow-md mb-4">
           <h2 className="text-xl font-semibold mb-4 flex items-center">

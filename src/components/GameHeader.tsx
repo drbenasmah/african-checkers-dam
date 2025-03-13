@@ -3,6 +3,7 @@ import React from 'react';
 import { Trophy, Brain } from "lucide-react";
 import { Button } from '@/components/ui/button';
 import { DifficultyLevel } from '@/lib/aiService';
+import { Undo2 } from 'lucide-react';
 
 interface GameHeaderProps {
   lightScore: number;
@@ -33,7 +34,12 @@ const GameHeader: React.FC<GameHeaderProps> = ({
 }) => {
   return (
     <div className="text-center">
-      <h1 className="text-4xl font-bold text-board-dark mb-2">International Checkers</h1>
+      <div className="mb-4">
+        <h1 className="text-4xl font-bold font-playfair drop-shadow-md bg-gradient-to-b from-board-dark to-board-dark/80 bg-clip-text text-transparent">
+          International Checkers
+        </h1>
+        <p className="text-sm text-gray-600 italic mb-2">Classic Strategy, Modern Challenge</p>
+      </div>
       
       <div className="flex justify-center items-center gap-8 mb-4">
         <div className="flex flex-col items-center bg-board-light p-3 rounded-lg shadow-md">
@@ -91,5 +97,3 @@ const GameHeader: React.FC<GameHeaderProps> = ({
 };
 
 export default GameHeader;
-
-import { Undo2 } from 'lucide-react';
