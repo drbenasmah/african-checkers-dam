@@ -3,6 +3,7 @@ import React from 'react';
 import { Brain, Circle, CircleDot, CircleDashed, Crown } from "lucide-react";
 import { Button } from '@/components/ui/button';
 import { DifficultyLevel } from '@/lib/aiService';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 
 interface GameSetupProps {
   difficultyLevel: DifficultyLevel;
@@ -16,15 +17,15 @@ const GameSetup: React.FC<GameSetupProps> = ({
   startNewGame 
 }) => {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 gap-8">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 gap-8 animate-fade-in">
       <div className="text-center mb-8">
-        <h1 className="text-5xl font-bold text-board-dark font-playfair drop-shadow-md mb-2 bg-gradient-to-b from-amber-700 to-amber-500 bg-clip-text text-transparent">
+        <h1 className="text-5xl font-bold text-board-dark font-playfair drop-shadow-lg mb-2 bg-gradient-to-b from-amber-700 to-amber-500 bg-clip-text text-transparent">
           International Checkers
         </h1>
-        <p className="text-lg text-gray-700 italic">Classic Strategy, Modern Challenge</p>
+        <p className="text-lg text-gray-700 italic font-medium">Classic Strategy, Modern Challenge</p>
       </div>
       <div className="flex flex-col gap-6 max-w-md w-full">
-        <div className="bg-white/90 backdrop-blur-sm p-6 rounded-lg shadow-md border border-amber-100">
+        <div className="bg-white/95 backdrop-blur-sm p-6 rounded-lg shadow-lg border border-amber-200">
           <h2 className="text-xl font-semibold mb-4 flex items-center text-amber-800">
             <Crown className="mr-2" /> Difficulty Level
           </h2>
@@ -110,7 +111,7 @@ const GameSetup: React.FC<GameSetupProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
           <Button 
             onClick={() => startNewGame('single')}
-            className="py-6 text-lg bg-gradient-to-b from-board-dark to-board-dark/80 hover:from-board-dark/90 hover:to-board-dark/70 shadow-md border border-amber-100/20 transform transition-all duration-200 hover:scale-105"
+            className="py-6 text-lg bg-gradient-to-b from-board-dark to-board-dark/90 hover:from-board-dark hover:to-board-dark/80 shadow-lg border border-amber-100/20 transform transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
             variant="default"
           >
             <div className="flex items-center">
@@ -120,7 +121,7 @@ const GameSetup: React.FC<GameSetupProps> = ({
           </Button>
           <Button 
             onClick={() => startNewGame('two-player')}
-            className="py-6 text-lg bg-gradient-to-b from-amber-800 to-amber-700 hover:from-amber-800/90 hover:to-amber-700/80 shadow-md border border-amber-100/20 transform transition-all duration-200 hover:scale-105"
+            className="py-6 text-lg bg-gradient-to-b from-amber-800 to-amber-700 hover:from-amber-700 hover:to-amber-600 shadow-lg border border-amber-100/20 transform transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
             variant="default"
           >
             <div className="flex items-center">
@@ -134,8 +135,19 @@ const GameSetup: React.FC<GameSetupProps> = ({
         </div>
       </div>
       
-      <div className="mt-8 opacity-80 animate-pulse">
-        <p className="text-sm text-amber-800 italic">Click a mode to begin your journey</p>
+      <div className="fixed bottom-2 right-4">
+        <HoverCard>
+          <HoverCardTrigger asChild>
+            <p className="text-sm bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-md shadow-sm hover:bg-white/90 transition-colors cursor-pointer">
+              Made by Ben Asmah
+            </p>
+          </HoverCardTrigger>
+          <HoverCardContent className="w-48 p-3">
+            <p className="text-sm text-gray-600">
+              International Checkers game created with ❤️ and modern web technologies
+            </p>
+          </HoverCardContent>
+        </HoverCard>
       </div>
     </div>
   );
