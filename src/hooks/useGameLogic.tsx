@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { createInitialBoard, isValidMove, executeMove, findCaptureSequences, findAllPossibleMoves } from '@/lib/gameUtils';
 import { makeAIMove, DifficultyLevel } from '@/lib/aiService';
@@ -25,7 +24,6 @@ export const useGameLogic = () => {
   const [darkScore, setDarkScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
 
-  // AI move effect
   useEffect(() => {
     if (gameMode === 'single' && currentPlayer === -1 && gameStarted && !gameOver) {
       const timeoutId = setTimeout(() => {
@@ -34,7 +32,7 @@ export const useGameLogic = () => {
         const aiMove = makeAIMove(board, difficultyLevel);
         if (aiMove) {
           const [startRow, startCol, endRow, endCol] = aiMove;
-          let newBoard = executeMove(board, startRow, startCol, endRow, endCol);
+          const newBoard = executeMove(board, startRow, startCol, endRow, endCol);
           setBoard(newBoard);
           
           const isCapture = Math.abs(startRow - endRow) > 1;
@@ -51,35 +49,36 @@ export const useGameLogic = () => {
               }
               
               if (bestSequence.length > 1) {
-                let currentBoard = newBoard;
+                let currentBoard = JSON.parse(JSON.stringify(newBoard));
                 let currentRow = endRow;
                 let currentCol = endCol;
                 
                 for (let i = 1; i < bestSequence.length; i++) {
                   const [nextRow, nextCol] = bestSequence[i];
                   
-                  ((i, currentRow, currentCol, nextRow, nextCol) => {
+                  ((i, currentRow, currentCol, nextRow, nextCol, prevBoard) => {
                     setTimeout(() => {
                       const updatedBoard = executeMove(
-                        i === 1 ? newBoard : JSON.parse(JSON.stringify(board)), 
+                        JSON.parse(JSON.stringify(prevBoard)),
                         currentRow, 
                         currentCol, 
                         nextRow, 
                         nextCol
                       );
                       setBoard(updatedBoard);
+                      
+                      if (i === bestSequence.length - 1) {
+                        checkForKingPromotion(updatedBoard);
+                        setCurrentPlayer(1);
+                        checkGameOver(updatedBoard, 1);
+                      }
                     }, 300 * i);
-                  })(i, currentRow, currentCol, nextRow, nextCol);
+                  })(i, currentRow, currentCol, nextRow, nextCol, currentBoard);
                   
+                  currentBoard = executeMove(currentBoard, currentRow, currentCol, nextRow, nextCol);
                   currentRow = nextRow;
                   currentCol = nextCol;
                 }
-                
-                setTimeout(() => {
-                  checkForKingPromotion(board);
-                  setCurrentPlayer(1);
-                  checkGameOver(board, 1);
-                }, 300 * bestSequence.length);
                 
                 return;
               }
