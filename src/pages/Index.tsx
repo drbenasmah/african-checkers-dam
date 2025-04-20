@@ -4,6 +4,7 @@ import Board from '@/components/Board';
 import GameSetup from '@/components/GameSetup';
 import GameHeader from '@/components/GameHeader';
 import Footer from '@/components/Footer';
+import OnlineMultiplayer from '@/components/OnlineMultiplayer';
 import { useGameLogic } from '@/hooks/useGameLogic';
 
 const Index = () => {
@@ -20,12 +21,28 @@ const Index = () => {
     lightScore,
     darkScore,
     gameOver,
+    showOnlineSetup,
     handleSquareClick,
     startNewGame,
     resetGame,
     undoMove,
-    resetScores
+    resetScores,
+    handleStartOnlineGame,
+    cancelOnlineSetup,
+    onlineState
   } = useGameLogic();
+
+  if (showOnlineSetup) {
+    return (
+      <>
+        <OnlineMultiplayer 
+          onGameStart={handleStartOnlineGame}
+          onCancel={cancelOnlineSetup}
+        />
+        <Footer />
+      </>
+    );
+  }
 
   if (!gameStarted) {
     return (
@@ -55,6 +72,7 @@ const Index = () => {
           undoMove={undoMove}
           resetScores={resetScores}
           moveHistory={moveHistory}
+          onlineState={onlineState}
         />
         
         <Board

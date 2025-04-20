@@ -1,9 +1,11 @@
+
 import { useState, useEffect } from 'react';
 import { createInitialBoard, isValidMove, executeMove, findCaptureSequences, findAllPossibleMoves } from '@/lib/gameUtils';
 import { makeAIMove, DifficultyLevel } from '@/lib/aiService';
 import { toast } from "sonner";
+import { useOnlineMultiplayer, GameSession } from './useOnlineMultiplayer';
 
-type GameMode = 'single' | 'two-player';
+type GameMode = 'single' | 'two-player' | 'online';
 
 type GameState = {
   board: number[][];
@@ -23,6 +25,32 @@ export const useGameLogic = () => {
   const [lightScore, setLightScore] = useState(0);
   const [darkScore, setDarkScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
+  const [onlineSessionId, setOnlineSessionId] = useState<string | null>(null);
+  const [showOnlineSetup, setShowOnlineSetup] = useState(false);
+
+  const {
+    onlineState,
+    gameSession,
+    makeMove,
+    leaveGame
+  } = useOnlineMultiplayer();
+
+  // Handle online game state updates
+  useEffect(() => {
+    if (gameMode === 'online' && gameSession) {
+      setBoard(gameSession.board);
+      setCurrentPlayer(gameSession.currentPlayer);
+      
+      if (gameSession.status === 'completed' && gameSession.winner !== null) {
+        setGameOver(true);
+        if (gameSession.winner === 1) {
+          setLightScore(prev => prev + 1);
+        } else if (gameSession.winner === -1) {
+          setDarkScore(prev => prev + 1);
+        }
+      }
+    }
+  }, [gameMode, gameSession]);
 
   useEffect(() => {
     if (gameMode === 'single' && currentPlayer === -1 && gameStarted && !gameOver) {
@@ -126,6 +154,11 @@ export const useGameLogic = () => {
 
   const handleWin = (winner: 1 | -1) => {
     setGameOver(true);
+    
+    if (gameMode === 'online' && onlineSessionId) {
+      makeMove(onlineSessionId, board, currentPlayer, true, winner);
+    }
+    
     if (winner === 1) {
       setLightScore(prev => prev + 1);
       toast.success("Light player wins!");
@@ -140,7 +173,7 @@ export const useGameLogic = () => {
   };
 
   const undoMove = () => {
-    if (moveHistory.length === 0) return;
+    if (moveHistory.length === 0 || gameMode === 'online') return;
     
     const previousState = moveHistory[moveHistory.length - 1];
     setBoard(previousState.board);
@@ -166,7 +199,17 @@ export const useGameLogic = () => {
   };
 
   const handleSquareClick = (row: number, col: number) => {
-    if (!gameStarted || gameOver || (gameMode === 'single' && currentPlayer === -1)) return;
+    if (!gameStarted || gameOver) return;
+    
+    // In online mode, only allow moves on your turn
+    if (gameMode === 'online') {
+      if (onlineState.playerRole !== currentPlayer) {
+        toast.error("It's not your turn");
+        return;
+      }
+    } else if (gameMode === 'single' && currentPlayer === -1) {
+      return; // Don't allow moves during AI's turn
+    }
 
     if (selectedPiece === null) {
       const piece = board[row][col];
@@ -206,10 +249,10 @@ export const useGameLogic = () => {
           if (furtherCaptures.length > 0 && furtherCaptures.some(seq => seq.length > 1)) {
             setCaptureInProgress(true);
           } else {
-            finishMove();
+            finishMove(newBoard);
           }
         } else {
-          finishMove();
+          finishMove(newBoard);
         }
       } else if (captureInProgress) {
         toast.error("You must complete a capture sequence!");
@@ -219,7 +262,7 @@ export const useGameLogic = () => {
         const newBoard = executeMove(board, startRow, startCol, row, col);
         setBoard(newBoard);
         checkForKingPromotion(newBoard);
-        finishMove();
+        finishMove(newBoard);
       } else {
         setSelectedPiece(null);
         setActiveSequence(null);
@@ -227,16 +270,31 @@ export const useGameLogic = () => {
     }
   };
   
-  const finishMove = () => {
+  const finishMove = (newBoard: number[][]) => {
     setSelectedPiece(null);
     setActiveSequence(null);
     setCaptureInProgress(false);
     const nextPlayer = currentPlayer === 1 ? -1 : 1;
     setCurrentPlayer(nextPlayer);
-    checkGameOver(board, nextPlayer);
+    
+    // For online mode, update the game state in the database
+    if (gameMode === 'online' && onlineSessionId) {
+      makeMove(onlineSessionId, newBoard, nextPlayer);
+    }
+    
+    checkGameOver(newBoard, nextPlayer);
   };
 
   const startNewGame = (mode: GameMode) => {
+    if (mode === 'online') {
+      setShowOnlineSetup(true);
+      return;
+    }
+    
+    completeStartNewGame(mode);
+  };
+
+  const completeStartNewGame = (mode: GameMode, sessionId: string | null = null) => {
     setGameMode(mode);
     setBoard(createInitialBoard());
     setSelectedPiece(null);
@@ -245,9 +303,26 @@ export const useGameLogic = () => {
     setGameStarted(true);
     setMoveHistory([]);
     setGameOver(false);
+    
+    if (mode === 'online' && sessionId) {
+      setOnlineSessionId(sessionId);
+    } else {
+      setOnlineSessionId(null);
+    }
+    
+    setShowOnlineSetup(false);
+  };
+
+  const handleStartOnlineGame = (sessionId: string) => {
+    completeStartNewGame('online', sessionId);
   };
 
   const resetGame = () => {
+    // If in online mode, leave the game session
+    if (gameMode === 'online' && onlineSessionId) {
+      leaveGame();
+    }
+    
     setGameMode(null);
     setBoard(createInitialBoard());
     setSelectedPiece(null);
@@ -256,6 +331,8 @@ export const useGameLogic = () => {
     setGameStarted(false);
     setMoveHistory([]);
     setGameOver(false);
+    setOnlineSessionId(null);
+    setShowOnlineSetup(false);
   };
 
   const resetScores = () => {
@@ -276,10 +353,14 @@ export const useGameLogic = () => {
     lightScore,
     darkScore,
     gameOver,
+    onlineState,
+    showOnlineSetup,
     handleSquareClick,
     startNewGame,
     resetGame,
     undoMove,
-    resetScores
+    resetScores,
+    handleStartOnlineGame,
+    cancelOnlineSetup: () => setShowOnlineSetup(false)
   };
 };
