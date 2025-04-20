@@ -5,7 +5,8 @@ import { makeAIMove, DifficultyLevel } from '@/lib/aiService';
 import { toast } from "sonner";
 import { useOnlineMultiplayer, GameSession } from './useOnlineMultiplayer';
 
-type GameMode = 'single' | 'two-player' | 'online';
+// Update the type definition to include 'online'
+export type GameMode = 'single' | 'two-player' | 'online';
 
 type GameState = {
   board: number[][];

@@ -7,6 +7,9 @@ import Footer from '@/components/Footer';
 import OnlineMultiplayer from '@/components/OnlineMultiplayer';
 import { useGameLogic } from '@/hooks/useGameLogic';
 
+// Update GameMode type to include 'online'
+type GameMode = 'single' | 'two-player' | 'online';
+
 const Index = () => {
   const {
     board,

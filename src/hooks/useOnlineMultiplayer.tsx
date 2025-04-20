@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { supabaseClient } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -32,10 +33,15 @@ export const useOnlineMultiplayer = () => {
   const [gameSession, setGameSession] = useState<GameSession | null>(null);
   const [isConnected, setIsConnected] = useState(false);
 
-  const userId = supabaseClient.auth.user()?.id;
+  // Get the current user ID
+  const getUserId = async () => {
+    const { data } = await supabaseClient.auth.getUser();
+    return data?.user?.id;
+  };
 
   // Initialize a new game session
   const createGameSession = async () => {
+    const userId = await getUserId();
     if (!userId) {
       toast.error("You need to be logged in to create a game");
       return null;
@@ -188,7 +194,7 @@ export const useOnlineMultiplayer = () => {
 
   // Subscribe to real-time updates for a game session
   const subscribeToGameSession = (sessionId: string) => {
-    const subscription = supabaseClient
+    const channel = supabaseClient
       .channel(`game_session:${sessionId}`)
       .on('postgres_changes', {
         event: 'UPDATE',
@@ -233,7 +239,7 @@ export const useOnlineMultiplayer = () => {
     
     // Return unsubscribe function
     return () => {
-      subscription.unsubscribe();
+      channel.unsubscribe();
       setIsConnected(false);
     };
   };

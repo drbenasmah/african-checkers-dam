@@ -5,7 +5,8 @@ import { useOnlineMultiplayer } from '@/hooks/useOnlineMultiplayer';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { RefreshCw, X } from 'lucide-react';
-import { supabaseClient } from '@/lib/supabase';
+import { supabaseClient, isSupabaseConfigured } from '@/lib/supabase';
+import { toast } from 'sonner';
 
 interface OnlineMultiplayerProps {
   onGameStart: (sessionId: string) => void;
@@ -32,11 +33,16 @@ const OnlineMultiplayer: React.FC<OnlineMultiplayerProps> = ({ onGameStart, onCa
   useEffect(() => {
     // Check if user is logged in
     const checkAuth = async () => {
-      const session = supabaseClient.auth.session();
-      setIsAuthenticated(!!session);
+      const { data } = await supabaseClient.auth.getSession();
+      setIsAuthenticated(!!data.session);
     };
     
-    checkAuth();
+    // Only run if Supabase is configured
+    if (isSupabaseConfigured()) {
+      checkAuth();
+    } else {
+      toast.error("Supabase configuration is missing. Please add your Supabase URL and anon key.");
+    }
   }, []);
   
   useEffect(() => {
@@ -76,13 +82,17 @@ const OnlineMultiplayer: React.FC<OnlineMultiplayerProps> = ({ onGameStart, onCa
   const handleSignIn = async () => {
     setIsLoading(true);
     try {
-      const { error } = await supabaseClient.auth.signIn({ email, password });
+      const { error } = await supabaseClient.auth.signInWithPassword({ 
+        email, 
+        password 
+      });
       
       if (error) throw error;
       
       setIsAuthenticated(true);
     } catch (error) {
       console.error("Error signing in:", error);
+      toast.error("Sign in failed. Please check your credentials.");
     }
     setIsLoading(false);
   };
@@ -90,16 +100,21 @@ const OnlineMultiplayer: React.FC<OnlineMultiplayerProps> = ({ onGameStart, onCa
   const handleSignUp = async () => {
     setIsLoading(true);
     try {
-      const { error } = await supabaseClient.auth.signUp(
-        { email, password },
-        { data: { username } }
-      );
+      const { error } = await supabaseClient.auth.signUp({
+        email, 
+        password,
+        options: { 
+          data: { username } 
+        }
+      });
       
       if (error) throw error;
       
+      toast.success("Account created! Please check your email to confirm your account.");
       setIsAuthenticated(true);
     } catch (error) {
       console.error("Error signing up:", error);
+      toast.error("Sign up failed. Please try again.");
     }
     setIsLoading(false);
   };
