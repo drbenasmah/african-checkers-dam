@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -29,8 +28,8 @@ export default {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         board: {
-          light: "#E8D0B3",
-          dark: "#B88B4A",
+          light: "#F5E6C3",
+          dark: "#8B4513",
           selected: "#DAA520",
         },
         piece: {
