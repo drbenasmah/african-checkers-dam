@@ -259,7 +259,10 @@ export const useOnlineMultiplayer = () => {
           );
         }
       })
-      .subscribe();
+      .subscribe((status) => {
+        // This adds the required parameter to subscribe()
+        console.log(`Subscription status: ${status}`);
+      });
 
     setIsConnected(true);
     
