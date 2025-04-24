@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Brain, Circle, CircleDot, CircleDashed, Crown } from "lucide-react";
+import { Brain, Circle, CircleDot, CircleDashed, Crown, Wifi } from "lucide-react";
 import { Button } from '@/components/ui/button';
 import { DifficultyLevel } from '@/lib/aiService';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
@@ -8,7 +8,7 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/h
 interface GameSetupProps {
   difficultyLevel: DifficultyLevel;
   setDifficultyLevel: (level: DifficultyLevel) => void;
-  startNewGame: (mode: 'single' | 'two-player') => void;
+  startNewGame: (mode: 'single' | 'two-player' | 'online') => void;
 }
 
 const GameSetup: React.FC<GameSetupProps> = ({ 
@@ -108,7 +108,7 @@ const GameSetup: React.FC<GameSetupProps> = ({
           </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
           <Button 
             onClick={() => startNewGame('single')}
             className="py-6 text-lg bg-gradient-to-b from-board-dark to-board-dark/90 hover:from-board-dark hover:to-board-dark/80 shadow-lg border border-amber-100/20 transform transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
@@ -130,6 +130,16 @@ const GameSetup: React.FC<GameSetupProps> = ({
                 <Circle className="text-piece-light -ml-1" />
               </div>
               <span>Two Players</span>
+            </div>
+          </Button>
+          <Button 
+            onClick={() => startNewGame('online')}
+            className="py-6 text-lg bg-gradient-to-b from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 shadow-lg border border-blue-100/20 transform transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+            variant="default"
+          >
+            <div className="flex items-center">
+              <Wifi className="mr-2 text-white" />
+              <span>Online Play</span>
             </div>
           </Button>
         </div>
