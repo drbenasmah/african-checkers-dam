@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from 'react';
-import { supabaseClient as supabase } from "@/lib/supabase";
+import { supabaseClient } from "@/lib/supabase";
 import { toast } from 'sonner';
 
 export type GameSession = {
@@ -33,24 +32,17 @@ export const useOnlineMultiplayer = () => {
   const [gameSession, setGameSession] = useState<GameSession | null>(null);
   const [isConnected, setIsConnected] = useState(false);
 
-  // Get the current user ID
   const getUserId = async () => {
-    if (!supabase) {
-      toast.error("Supabase client not initialized");
+    try {
+      const { data } = await supabaseClient.auth.getUser();
+      return data?.user?.id;
+    } catch (error) {
+      toast.error("Error getting user ID");
       return null;
     }
-    
-    const { data } = await supabase.auth.getUser();
-    return data?.user?.id;
   };
 
-  // Initialize a new game session
   const createGameSession = async () => {
-    if (!supabase) {
-      toast.error("Supabase client not initialized");
-      return null;
-    }
-    
     const userId = await getUserId();
     if (!userId) {
       toast.error("You need to be logged in to create a game");
@@ -58,7 +50,7 @@ export const useOnlineMultiplayer = () => {
     }
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('game_sessions')
         .insert({
           board: JSON.stringify(Array(10).fill().map(() => Array(10).fill(0))), // Empty board placeholder
@@ -107,13 +99,7 @@ export const useOnlineMultiplayer = () => {
     }
   };
 
-  // Join an existing game session
   const joinGameSession = async (sessionId: string) => {
-    if (!supabase) {
-      toast.error("Supabase client not initialized");
-      return false;
-    }
-    
     const userId = await getUserId();
     if (!userId) {
       toast.error("You need to be logged in to join a game");
@@ -122,7 +108,7 @@ export const useOnlineMultiplayer = () => {
 
     try {
       // First check if the session exists and is available
-      const { data: sessionData, error: sessionError } = await supabase
+      const { data: sessionData, error: sessionError } = await supabaseClient
         .from('game_sessions')
         .select('*')
         .eq('id', sessionId)
@@ -135,7 +121,7 @@ export const useOnlineMultiplayer = () => {
       }
 
       // Update the session with the joining player
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('game_sessions')
         .update({
           dark_player_id: userId,
@@ -180,7 +166,6 @@ export const useOnlineMultiplayer = () => {
     }
   };
 
-  // Make a move in the online game
   const makeMove = async (
     sessionId: string,
     board: number[][],
@@ -188,13 +173,13 @@ export const useOnlineMultiplayer = () => {
     isGameOver: boolean = false,
     winner: 1 | -1 | null = null
   ) => {
-    if (!supabase) {
+    if (!supabaseClient) {
       toast.error("Supabase client not initialized");
       return false;
     }
     
     try {
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('game_sessions')
         .update({
           board: JSON.stringify(board),
@@ -215,74 +200,71 @@ export const useOnlineMultiplayer = () => {
     }
   };
 
-  // Subscribe to real-time updates for a game session
   const subscribeToGameSession = (sessionId: string) => {
-    if (!supabase) {
-      toast.error("Supabase client not initialized");
+    try {
+      const channel = supabaseClient
+        .channel(`game_session:${sessionId}`)
+        .on('postgres_changes', {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'game_sessions',
+          filter: `id=eq.${sessionId}`
+        }, (payload: any) => {
+          const updatedSession = {
+            id: payload.new.id,
+            board: JSON.parse(payload.new.board),
+            currentPlayer: payload.new.current_player,
+            lightPlayerId: payload.new.light_player_id,
+            darkPlayerId: payload.new.dark_player_id,
+            lastMoveTime: payload.new.last_move_time,
+            status: payload.new.status,
+            winner: payload.new.winner
+          };
+          
+          setGameSession(updatedSession);
+          
+          // Update waiting status if someone joined
+          if (onlineState.waitingForOpponent && payload.new.dark_player_id) {
+            setOnlineState(prev => ({
+              ...prev,
+              waitingForOpponent: false,
+              opponentId: payload.new.dark_player_id
+            }));
+            toast.success("Opponent joined the game!");
+          }
+          
+          // Handle game completion
+          if (payload.new.status === 'completed' && payload.new.winner !== null) {
+            const didWin = payload.new.winner === onlineState.playerRole;
+            toast[didWin ? 'success' : 'error'](
+              didWin ? "You won the game!" : "You lost the game."
+            );
+          }
+        })
+        .subscribe();
+
+      setIsConnected(true);
+      
+      // Return unsubscribe function
+      return () => {
+        supabaseClient.removeChannel(channel);
+        setIsConnected(false);
+      };
+    } catch (error) {
+      console.error("Error subscribing to game session:", error);
+      toast.error("Failed to connect to game updates");
       return () => {};
     }
-    
-    const channel = supabase
-      .channel(`game_session:${sessionId}`)
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'game_sessions',
-        filter: `id=eq.${sessionId}`
-      }, (payload: any) => {
-        const updatedSession = {
-          id: payload.new.id,
-          board: JSON.parse(payload.new.board),
-          currentPlayer: payload.new.current_player,
-          lightPlayerId: payload.new.light_player_id,
-          darkPlayerId: payload.new.dark_player_id,
-          lastMoveTime: payload.new.last_move_time,
-          status: payload.new.status,
-          winner: payload.new.winner
-        };
-        
-        setGameSession(updatedSession);
-        
-        // Update waiting status if someone joined
-        if (onlineState.waitingForOpponent && payload.new.dark_player_id) {
-          setOnlineState(prev => ({
-            ...prev,
-            waitingForOpponent: false,
-            opponentId: payload.new.dark_player_id
-          }));
-          toast.success("Opponent joined the game!");
-        }
-        
-        // Handle game completion
-        if (payload.new.status === 'completed' && payload.new.winner !== null) {
-          const didWin = payload.new.winner === onlineState.playerRole;
-          toast[didWin ? 'success' : 'error'](
-            didWin ? "You won the game!" : "You lost the game."
-          );
-        }
-      })
-      .subscribe();
-
-    setIsConnected(true);
-    
-    // Return unsubscribe function
-    return () => {
-      if (supabase) {
-        supabase.removeChannel(channel);
-      }
-      setIsConnected(false);
-    };
   };
 
-  // Find available game sessions
   const findAvailableGames = async () => {
-    if (!supabase) {
+    if (!supabaseClient) {
       toast.error("Supabase client not initialized");
       return [];
     }
     
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('game_sessions')
         .select('*')
         .eq('status', 'waiting')
@@ -302,21 +284,20 @@ export const useOnlineMultiplayer = () => {
     }
   };
 
-  // Leave/forfeit a game
   const leaveGame = async () => {
-    if (!supabase || !onlineState.sessionId || !gameSession) return;
+    if (!supabaseClient || !onlineState.sessionId || !gameSession) return;
     
     try {
       // If the game is still waiting for an opponent, delete it
       if (gameSession.status === 'waiting') {
-        await supabase
+        await supabaseClient
           .from('game_sessions')
           .delete()
           .eq('id', onlineState.sessionId);
       } else {
         // Otherwise, mark the game as complete with the opponent as winner
         const winner = onlineState.playerRole === 1 ? -1 : 1;
-        await supabase
+        await supabaseClient
           .from('game_sessions')
           .update({
             status: 'completed',
@@ -345,8 +326,8 @@ export const useOnlineMultiplayer = () => {
   useEffect(() => {
     // Cleanup subscription on unmount
     return () => {
-      if (onlineState.sessionId && supabase) {
-        supabase.channel(`game_session:${onlineState.sessionId}`).unsubscribe();
+      if (onlineState.sessionId) {
+        supabaseClient.channel(`game_session:${onlineState.sessionId}`).unsubscribe();
       }
     };
   }, [onlineState.sessionId]);

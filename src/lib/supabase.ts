@@ -3,8 +3,9 @@ import { createClient } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 
 // Get environment variables with fallbacks to prevent runtime errors
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+// Using the values from src/integrations/supabase/client.ts directly
+const supabaseUrl = "https://vnvkeuzdqxgfcdztzmrj.supabase.co";
+const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZudmtldXpkcXhnZmNkenR6bXJqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUxNzI5MzcsImV4cCI6MjA2MDc0ODkzN30.iuhg9UqT-u84hqFhgadqZeNCfIrXOofHWc7jZhkkNNo";
 
 // Define database types for TypeScript
 export type Tables = {
@@ -20,10 +21,8 @@ export type Tables = {
   };
 };
 
-// Create the Supabase client only if both URL and key are provided
-export const supabaseClient = supabaseUrl && supabaseAnonKey 
-  ? createClient<{Tables: Tables}>(supabaseUrl, supabaseAnonKey)
-  : null;
+// Create the Supabase client with the fixed URL and key
+export const supabaseClient = createClient<{Tables: Tables}>(supabaseUrl, supabaseAnonKey);
 
 // Helper function to check if Supabase is properly configured
 export const isSupabaseConfigured = () => {
