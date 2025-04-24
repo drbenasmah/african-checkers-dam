@@ -1,3 +1,4 @@
+
 import React from 'react';
 import Board from '@/components/Board';
 import GameSetup from '@/components/GameSetup';
@@ -6,7 +7,7 @@ import Footer from '@/components/Footer';
 import OnlineMultiplayer from '@/components/OnlineMultiplayer';
 import { useGameLogic } from '@/hooks/useGameLogic';
 
-// Explicitly define GameMode to include 'online'
+// Export the GameMode type to include 'online'
 export type GameMode = 'single' | 'two-player' | 'online';
 
 const Index = () => {
