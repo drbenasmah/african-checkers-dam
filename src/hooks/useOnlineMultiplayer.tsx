@@ -241,10 +241,16 @@ export const useOnlineMultiplayer = () => {
             );
           }
         })
-        .subscribe();
+        .subscribe((status) => {
+          // Provide a callback function that handles the subscription status
+          if (status === 'SUBSCRIBED') {
+            setIsConnected(true);
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('Error subscribing to channel');
+            setIsConnected(false);
+          }
+        });
 
-      setIsConnected(true);
-      
       // Return unsubscribe function
       return () => {
         supabaseClient.removeChannel(channel);

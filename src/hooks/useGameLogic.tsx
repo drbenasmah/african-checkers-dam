@@ -4,9 +4,10 @@ import { createInitialBoard, isValidMove, executeMove, findCaptureSequences, fin
 import { makeAIMove, DifficultyLevel } from '@/lib/aiService';
 import { toast } from "sonner";
 import { useOnlineMultiplayer, GameSession } from './useOnlineMultiplayer';
+import { GameMode } from '@/pages/Index';
 
-// Update the type definition to include 'online'
-export type GameMode = 'single' | 'two-player' | 'online';
+// Remove this duplicate type definition and use the imported one
+// export type GameMode = 'single' | 'two-player' | 'online';
 
 type GameState = {
   board: number[][];
