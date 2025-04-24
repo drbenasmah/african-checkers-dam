@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Board from '@/components/Board';
 import GameSetup from '@/components/GameSetup';
@@ -67,7 +66,7 @@ const Index = () => {
           lightScore={lightScore}
           darkScore={darkScore}
           gameOver={gameOver}
-          gameMode={gameMode as 'single' | 'two-player' | 'online'}
+          gameMode={gameMode}
           currentPlayer={currentPlayer}
           difficultyLevel={difficultyLevel}
           resetGame={resetGame}

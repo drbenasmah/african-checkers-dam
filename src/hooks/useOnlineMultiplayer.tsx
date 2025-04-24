@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from 'react';
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseClient as supabase } from "@/lib/supabase";
 import { toast } from 'sonner';
 
 export type GameSession = {
@@ -72,8 +73,9 @@ export const useOnlineMultiplayer = () => {
         .single();
 
       if (error) throw error;
+      if (!data) throw new Error("No data returned from insert");
 
-      const session = {
+      const session: GameSession = {
         id: data.id,
         board: JSON.parse(data.board),
         currentPlayer: data.current_player,
@@ -144,8 +146,9 @@ export const useOnlineMultiplayer = () => {
         .single();
 
       if (error) throw error;
+      if (!data) throw new Error("No data returned from update");
 
-      const session = {
+      const session: GameSession = {
         id: data.id,
         board: JSON.parse(data.board),
         currentPlayer: data.current_player,
@@ -226,7 +229,7 @@ export const useOnlineMultiplayer = () => {
         schema: 'public',
         table: 'game_sessions',
         filter: `id=eq.${sessionId}`
-      }, (payload) => {
+      }, (payload: any) => {
         const updatedSession = {
           id: payload.new.id,
           board: JSON.parse(payload.new.board),
@@ -258,17 +261,15 @@ export const useOnlineMultiplayer = () => {
           );
         }
       })
-      .subscribe((status) => {
-        // This adds the required parameter to subscribe()
-        console.log(`Subscription status: ${status}`);
-        return status;
-      });
+      .subscribe();
 
     setIsConnected(true);
     
     // Return unsubscribe function
     return () => {
-      supabase.removeChannel(channel);
+      if (supabase) {
+        supabase.removeChannel(channel);
+      }
       setIsConnected(false);
     };
   };
@@ -289,11 +290,11 @@ export const useOnlineMultiplayer = () => {
 
       if (error) throw error;
       
-      return data.map(session => ({
+      return data ? data.map(session => ({
         id: session.id,
         createdAt: session.last_move_time,
         hostId: session.light_player_id
-      }));
+      })) : [];
     } catch (error) {
       console.error("Error finding available games:", error);
       toast.error("Failed to load available games");
