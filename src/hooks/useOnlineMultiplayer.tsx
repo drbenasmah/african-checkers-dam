@@ -1,6 +1,5 @@
-
-import { useEffect, useState } from 'react';
-import { supabaseClient } from '@/lib/supabase';
+import { useState, useEffect } from 'react';
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from 'sonner';
 
 export type GameSession = {
@@ -35,18 +34,18 @@ export const useOnlineMultiplayer = () => {
 
   // Get the current user ID
   const getUserId = async () => {
-    if (!supabaseClient) {
+    if (!supabase) {
       toast.error("Supabase client not initialized");
       return null;
     }
     
-    const { data } = await supabaseClient.auth.getUser();
+    const { data } = await supabase.auth.getUser();
     return data?.user?.id;
   };
 
   // Initialize a new game session
   const createGameSession = async () => {
-    if (!supabaseClient) {
+    if (!supabase) {
       toast.error("Supabase client not initialized");
       return null;
     }
@@ -58,7 +57,7 @@ export const useOnlineMultiplayer = () => {
     }
 
     try {
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabase
         .from('game_sessions')
         .insert({
           board: JSON.stringify(Array(10).fill().map(() => Array(10).fill(0))), // Empty board placeholder
@@ -108,7 +107,7 @@ export const useOnlineMultiplayer = () => {
 
   // Join an existing game session
   const joinGameSession = async (sessionId: string) => {
-    if (!supabaseClient) {
+    if (!supabase) {
       toast.error("Supabase client not initialized");
       return false;
     }
@@ -121,7 +120,7 @@ export const useOnlineMultiplayer = () => {
 
     try {
       // First check if the session exists and is available
-      const { data: sessionData, error: sessionError } = await supabaseClient
+      const { data: sessionData, error: sessionError } = await supabase
         .from('game_sessions')
         .select('*')
         .eq('id', sessionId)
@@ -134,7 +133,7 @@ export const useOnlineMultiplayer = () => {
       }
 
       // Update the session with the joining player
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabase
         .from('game_sessions')
         .update({
           dark_player_id: userId,
@@ -186,13 +185,13 @@ export const useOnlineMultiplayer = () => {
     isGameOver: boolean = false,
     winner: 1 | -1 | null = null
   ) => {
-    if (!supabaseClient) {
+    if (!supabase) {
       toast.error("Supabase client not initialized");
       return false;
     }
     
     try {
-      const { error } = await supabaseClient
+      const { error } = await supabase
         .from('game_sessions')
         .update({
           board: JSON.stringify(board),
@@ -215,12 +214,12 @@ export const useOnlineMultiplayer = () => {
 
   // Subscribe to real-time updates for a game session
   const subscribeToGameSession = (sessionId: string) => {
-    if (!supabaseClient) {
+    if (!supabase) {
       toast.error("Supabase client not initialized");
       return () => {};
     }
     
-    const channel = supabaseClient
+    const channel = supabase
       .channel(`game_session:${sessionId}`)
       .on('postgres_changes', {
         event: 'UPDATE',
@@ -262,26 +261,27 @@ export const useOnlineMultiplayer = () => {
       .subscribe((status) => {
         // This adds the required parameter to subscribe()
         console.log(`Subscription status: ${status}`);
+        return status;
       });
 
     setIsConnected(true);
     
     // Return unsubscribe function
     return () => {
-      channel.unsubscribe();
+      supabase.removeChannel(channel);
       setIsConnected(false);
     };
   };
 
   // Find available game sessions
   const findAvailableGames = async () => {
-    if (!supabaseClient) {
+    if (!supabase) {
       toast.error("Supabase client not initialized");
       return [];
     }
     
     try {
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabase
         .from('game_sessions')
         .select('*')
         .eq('status', 'waiting')
@@ -303,19 +303,19 @@ export const useOnlineMultiplayer = () => {
 
   // Leave/forfeit a game
   const leaveGame = async () => {
-    if (!supabaseClient || !onlineState.sessionId || !gameSession) return;
+    if (!supabase || !onlineState.sessionId || !gameSession) return;
     
     try {
       // If the game is still waiting for an opponent, delete it
       if (gameSession.status === 'waiting') {
-        await supabaseClient
+        await supabase
           .from('game_sessions')
           .delete()
           .eq('id', onlineState.sessionId);
       } else {
         // Otherwise, mark the game as complete with the opponent as winner
         const winner = onlineState.playerRole === 1 ? -1 : 1;
-        await supabaseClient
+        await supabase
           .from('game_sessions')
           .update({
             status: 'completed',
@@ -344,8 +344,8 @@ export const useOnlineMultiplayer = () => {
   useEffect(() => {
     // Cleanup subscription on unmount
     return () => {
-      if (onlineState.sessionId && supabaseClient) {
-        supabaseClient.channel(`game_session:${onlineState.sessionId}`).unsubscribe();
+      if (onlineState.sessionId && supabase) {
+        supabase.channel(`game_session:${onlineState.sessionId}`).unsubscribe();
       }
     };
   }, [onlineState.sessionId]);

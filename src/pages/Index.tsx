@@ -7,8 +7,8 @@ import Footer from '@/components/Footer';
 import OnlineMultiplayer from '@/components/OnlineMultiplayer';
 import { useGameLogic } from '@/hooks/useGameLogic';
 
-// Define GameMode type to include 'online'
-type GameMode = 'single' | 'two-player' | 'online';
+// Explicitly define GameMode to include 'online'
+export type GameMode = 'single' | 'two-player' | 'online';
 
 const Index = () => {
   const {
@@ -67,7 +67,7 @@ const Index = () => {
           lightScore={lightScore}
           darkScore={darkScore}
           gameOver={gameOver}
-          gameMode={gameMode as GameMode}
+          gameMode={gameMode as 'single' | 'two-player' | 'online'}
           currentPlayer={currentPlayer}
           difficultyLevel={difficultyLevel}
           resetGame={resetGame}
