@@ -1,13 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import { createInitialBoard, isValidMove, executeMove, findCaptureSequences, findAllPossibleMoves } from '@/lib/gameUtils';
 import { makeAIMove, DifficultyLevel } from '@/lib/aiService';
 import { toast } from "sonner";
 import { useOnlineMultiplayer, GameSession } from './useOnlineMultiplayer';
 import { GameMode } from '@/pages/Index';
-
-// Remove this duplicate type definition and use the imported one
-// export type GameMode = 'single' | 'two-player' | 'online';
 
 type GameState = {
   board: number[][];
@@ -37,7 +33,6 @@ export const useGameLogic = () => {
     leaveGame
   } = useOnlineMultiplayer();
 
-  // Handle online game state updates
   useEffect(() => {
     if (gameMode === 'online' && gameSession) {
       setBoard(gameSession.board);
@@ -203,14 +198,13 @@ export const useGameLogic = () => {
   const handleSquareClick = (row: number, col: number) => {
     if (!gameStarted || gameOver) return;
     
-    // In online mode, only allow moves on your turn
     if (gameMode === 'online') {
       if (onlineState.playerRole !== currentPlayer) {
         toast.error("It's not your turn");
         return;
       }
     } else if (gameMode === 'single' && currentPlayer === -1) {
-      return; // Don't allow moves during AI's turn
+      return;
     }
 
     if (selectedPiece === null) {
@@ -279,7 +273,6 @@ export const useGameLogic = () => {
     const nextPlayer = currentPlayer === 1 ? -1 : 1;
     setCurrentPlayer(nextPlayer);
     
-    // For online mode, update the game state in the database
     if (gameMode === 'online' && onlineSessionId) {
       makeMove(onlineSessionId, newBoard, nextPlayer);
     }
@@ -320,7 +313,6 @@ export const useGameLogic = () => {
   };
 
   const resetGame = () => {
-    // If in online mode, leave the game session
     if (gameMode === 'online' && onlineSessionId) {
       leaveGame();
     }
