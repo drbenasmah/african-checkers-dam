@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabaseClient } from "@/lib/supabase";
 import { toast } from 'sonner';
@@ -241,7 +242,7 @@ export const useOnlineMultiplayer = () => {
             );
           }
         })
-        .subscribe(status => {
+        .subscribe((status: string) => {
           if (status === 'SUBSCRIBED') {
             setIsConnected(true);
           } else if (status === 'CHANNEL_ERROR') {
