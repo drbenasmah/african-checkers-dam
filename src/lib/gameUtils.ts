@@ -163,17 +163,20 @@ export const findCaptureSequences = (
             enemyRow = currentRow;
             enemyCol = currentCol;
           } else {
-            break;
+            break; // Found a second piece, stop in this direction
           }
         } else if (foundEnemy) {
+          // Found empty space after enemy - valid capture
+          // Create a new board with the captured piece removed
           const newBoard = board.map(row => [...row]);
-          newBoard[enemyRow][enemyCol] = 0;
-          newBoard[row][col] = 0;
-          newBoard[currentRow][currentCol] = piece;
+          newBoard[enemyRow][enemyCol] = 0; // Remove captured piece
+          newBoard[row][col] = 0; // Remove king from original position
+          newBoard[currentRow][currentCol] = piece; // Place king in new position
           
           foundCapture = true;
           const newSequence = [...sequence, [currentRow, currentCol] as [number, number]];
           
+          // Check for additional captures from the new position
           const furtherCaptures = findCaptureSequences(
             newBoard,
             currentRow,
@@ -190,12 +193,14 @@ export const findCaptureSequences = (
             allSequences.push(newSequence);
           }
         }
+        
+        // Continue scanning in this direction
         currentRow += dRow;
         currentCol += dCol;
       }
     }
   } else {
-    // Regular piece capture logic
+    // Regular piece capture logic - unchanged
     const directions = [[-2, -2], [-2, 2], [2, -2], [2, 2]];
     
     for (const [dRow, dCol] of directions) {
@@ -313,10 +318,12 @@ export const executeMove = (
       let currentRow = startRow + rowStep;
       let currentCol = startCol + colStep;
       
+      // Only remove one piece that is directly in the path
       while (currentRow !== endRow || currentCol !== endCol) {
-        if (newBoard[currentRow][currentCol] !== 0) {
+        if (newBoard[currentRow][currentCol] !== 0 && 
+            Math.sign(newBoard[currentRow][currentCol]) !== Math.sign(piece)) {
           newBoard[currentRow][currentCol] = 0;
-          break;
+          break; // Only remove one piece
         }
         currentRow += rowStep;
         currentCol += colStep;
